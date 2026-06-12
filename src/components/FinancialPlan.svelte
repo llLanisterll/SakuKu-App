@@ -45,12 +45,13 @@
 
   function handleCategoryChange(e) {
     if (e.target.value === '__ADD_NEW__') {
-      ui.askPrompt({
-        title: 'Buat Kategori Baru',
-        message: 'Masukkan nama kategori pengeluaran baru:',
-        confirmText: 'Buat',
-        onConfirm: async (val) => {
-          if (!val.trim()) { budgetCategory = 'GLOBAL_MONTH'; return; }
+      const val = window.prompt('Masukkan nama kategori pengeluaran baru:');
+      if (val !== null) {
+        if (!val.trim()) {
+          budgetCategory = 'GLOBAL_MONTH';
+          return;
+        }
+        (async () => {
           try {
             const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
             const color = colors[Math.floor(Math.random() * colors.length)];
@@ -61,9 +62,10 @@
             ui.addNotification(err.message, 'error');
             budgetCategory = 'GLOBAL_MONTH';
           }
-        },
-        onCancel: () => { budgetCategory = 'GLOBAL_MONTH'; }
-      });
+        })();
+      } else {
+        budgetCategory = 'GLOBAL_MONTH';
+      }
     } else if (e.target.value !== 'GLOBAL_MONTH') {
       const existing = auth.budgets.find(b => b.category === e.target.value);
       if (existing) {
