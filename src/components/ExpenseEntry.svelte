@@ -48,11 +48,8 @@
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
 
-  const globalBudget = $derived.by(() => {
-    const b = (auth.budgets || []).find(b => b.category === 'GLOBAL_MONTH');
-    return b ? Number(b.amount) : 0;
-  });
-
+  const globalBudgetRecord = $derived((auth.budgets || []).find(b => b.category === 'GLOBAL_MONTH'));
+  
   const globalUsage = $derived.by(() => {
     return auth.transactions
       .filter(t => (t.type === 'expense' || !t.type) && t.date?.startsWith(thisMonth))
@@ -558,12 +555,13 @@
         </div>
 
         <div class="ee-budget-list">
-          {#if globalBudget > 0}
+          {#if globalBudgetRecord}
+            {@const globalBudgetAmount = Number(globalBudgetRecord.amount)}
             {@const spent = globalUsage}
             {@const draftAmt = totalDraftAmount}
             {@const simulated = spent + draftAmt}
-            {@const remaining = globalBudget - simulated}
-            {@const pct = Math.min(100, Math.max(0, (simulated / globalBudget) * 100))}
+            {@const remaining = globalBudgetAmount - simulated}
+            {@const pct = Math.min(100, Math.max(0, (simulated / globalBudgetAmount) * 100))}
             {@const isOver = remaining < 0}
             {@const today = new Date()}
             {@const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()}
@@ -600,9 +598,11 @@
             </div>
           {:else}
             <div class="ee-empty-budget">
-              <span class="ee-empty-emoji">📉</span>
-              <p>Anggaran bulanan belum diatur.</p>
-              <button class="btn-link-sm" onclick={() => ui.currentTab = 'planning'}>Atur Sekarang</button>
+              <div class="ee-empty-icon-wrap">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="ee-empty-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <p class="ee-empty-text">Anggaran bulanan belum diatur.</p>
+              <button class="ee-empty-btn" onclick={() => ui.currentTab = 'planning'}>Atur Sekarang</button>
             </div>
           {/if}
         </div>
@@ -1368,6 +1368,61 @@
     font-weight: 800;
     color: var(--text-primary);
     flex-shrink: 0;
+  }
+
+  .ee-empty-budget {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(255,255,255,0.01);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    text-align: center;
+    gap: 0.5rem;
+  }
+  
+  :root.light-theme .ee-empty-budget { background: rgba(0,0,0,0.01); }
+
+  .ee-empty-icon-wrap {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--color-primary-glow);
+    color: var(--color-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .ee-empty-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .ee-empty-text {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  .ee-empty-btn {
+    margin-top: 0.25rem;
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 0;
+  }
+  
+  .ee-empty-btn:hover {
+    color: var(--color-primary-hover);
+    text-decoration: underline;
   }
 
   /* ── Templates ── */
