@@ -389,39 +389,37 @@
 
         <!-- KOLOM KANAN: DAFTAR PAYMENT METHOD -->
         <div class="glass-card list-panel-card">
-          <div class="panel-header border-b">
-            <h3>Metode Pembayaran Anda</h3>
-            <div class="badge-count">{auth.paymentMethods.length} metode</div>
+          <div class="panel-header">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h3>Metode Pembayaran Anda</h3>
+              <span class="default-badge-text">{auth.paymentMethods.length} metode</span>
+            </div>
+            <p class="panel-subtitle">Klik ikon tempat sampah untuk menghapus.</p>
           </div>
 
-          <div class="items-list-container">
+          <div class="cat-items-list">
             {#if auth.paymentMethods.length === 0}
-              <div class="empty-state">
-                <div class="empty-icon text-muted">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
-                  </svg>
-                </div>
-                <h4>Belum ada metode pembayaran kustom</h4>
-                <p>Metode yang Anda buat di sini akan muncul sebagai pilihan saat Anda mencatat pengeluaran.</p>
-              </div>
+              <p class="empty-text">Belum ada metode pembayaran. Tambahkan di form sebelah kiri.</p>
             {:else}
-              <div class="categories-grid">
-                {#each auth.paymentMethods as pm (pm.id)}
-                  <div class="category-item-card animate-scale-in">
-                    <div class="cat-info">
-                      <div class="cat-color-dot" style="background-color: var(--color-primary)"></div>
-                      <span class="cat-name">{pm.name}</span>
-                    </div>
-                    
-                    <button class="action-btn delete" title="Hapus" onclick={() => handleDeletePaymentMethod(pm.id, pm.name)}>
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
+              {#each auth.paymentMethods as pm (pm.id)}
+                <div class="cat-item-row">
+                  <div class="cat-meta">
+                    <span class="cat-color-dot" style="background-color: var(--color-primary);">
+                    </span>
+                    <span class="cat-name-lbl">{pm.name}</span>
                   </div>
-                {/each}
-              </div>
+                  <button
+                    type="button"
+                    class="btn-delete-cat-icon"
+                    title="Hapus metode {pm.name}"
+                    onclick={() => handleDeletePaymentMethod(pm.id, pm.name)}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-1.5 12a1.5 1.5 0 01-1.5 1.5H7.5A1.5 1.5 0 016 20.25l-1.5-12m16.5 0h-18m16.5 0a2.25 2.25 0 00-2.25-2.25H16.5m-9-2.25h9M9 5.25V3a.75.75 0 01.75-.75h4.5a.75.75 0 01.75.75v2.25" />
+                    </svg>
+                  </button>
+                </div>
+              {/each}
             {/if}
           </div>
         </div>
