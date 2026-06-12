@@ -2,6 +2,7 @@
   import { auth } from '../lib/store.svelte.js';
 
   let reportPeriod = $state(6); // 3, 6, or 12 months
+  let reportMode = $state('expense'); // 'expense' or 'income'
 
   function formatRupiah(v) {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v);
@@ -30,11 +31,11 @@
     return months;
   });
 
-  // Monthly spending data
+  // Monthly spending data based on mode
   const monthlyData = $derived.by(() => {
     return monthsList.map(m => {
       const total = auth.transactions
-        .filter(t => t.date?.startsWith(m.key))
+        .filter(t => t.date?.startsWith(m.key) && (reportMode === 'income' ? t.type === 'income' : (t.type === 'expense' || !t.type)))
         .reduce((sum, t) => sum + Number(t.amount), 0);
       return { key: m.key, label: formatMonthShort(m.key), total };
     });
@@ -49,6 +50,10 @@
   const periodTxs = $derived(
     auth.transactions.filter(t => t.date >= periodStart && t.date)
   );
+  
+  const targetTxs = $derived(
+    periodTxs.filter(t => reportMode === 'income' ? t.type === 'income' : (t.type === 'expense' || !t.type))
+  );
 
   const totalPeriod = $derived(
     periodTxs.filter(t => t.type !== 'income').reduce((sum, t) => sum + Number(t.amount), 0)
@@ -59,11 +64,13 @@
   );
 
   const netPeriod = $derived(totalIncomePeriod - totalPeriod);
+  
+  const currentModeTotal = $derived(reportMode === 'income' ? totalIncomePeriod : totalPeriod);
 
   // Category breakdown
   const categoryBreakdown = $derived.by(() => {
     const catMap = {};
-    periodTxs.forEach(t => {
+    targetTxs.forEach(t => {
       const cat = t.category || 'Lainnya';
       catMap[cat] = (catMap[cat] || 0) + Number(t.amount);
     });
@@ -83,7 +90,7 @@
   const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
   const dayOfWeekData = $derived.by(() => {
     const dayMap = Array(7).fill(0);
-    periodTxs.forEach(t => {
+    targetTxs.forEach(t => {
       if (!t.date) return;
       const d = new Date(t.date);
       dayMap[d.getDay()] += Number(t.amount);
@@ -103,14 +110,14 @@
 
   // Top 5 biggest transactions
   const topTransactions = $derived(
-    [...periodTxs]
+    [...targetTxs]
       .sort((a, b) => Number(b.amount) - Number(a.amount))
       .slice(0, 5)
   );
 
   // Summary stats
-  const avgPerDay = $derived(totalPeriod > 0 ? totalPeriod / (reportPeriod * 30) : 0);
-  const avgPerMonth = $derived(totalPeriod > 0 ? totalPeriod / reportPeriod : 0);
+  const avgPerDay = $derived(currentModeTotal > 0 ? currentModeTotal / (reportPeriod * 30) : 0);
+  const avgPerMonth = $derived(currentModeTotal > 0 ? currentModeTotal / reportPeriod : 0);
   const avgIncomePerMonth = $derived(totalIncomePeriod > 0 ? totalIncomePeriod / reportPeriod : 0);
 
   function getCategoryColor(name) {
@@ -157,6 +164,16 @@
     </div>
   </div>
 
+  <!-- Mode Selector -->
+  <div class="mode-selector-row">
+    <button class="mode-btn {reportMode === 'expense' ? 'active-expense' : ''}" onclick={() => reportMode = 'expense'}>
+      Grafik Pengeluaran
+    </button>
+    <button class="mode-btn {reportMode === 'income' ? 'active-income' : ''}" onclick={() => reportMode = 'income'}>
+      Grafik Pemasukan
+    </button>
+  </div>
+
   <!-- Summary Stats Row -->
   <div class="summary-row">
     <div class="sum-card glass-card">
@@ -198,7 +215,7 @@
         </svg>
       </div>
       <div class="sum-info">
-        <span class="sum-label">Rata-rata Keluar/Bulan</span>
+        <span class="sum-label">Rata-rata {reportMode === 'income' ? 'Masuk' : 'Keluar'}/Bulan</span>
         <span class="sum-val primary">{formatRupiah(avgPerMonth)}</span>
       </div>
     </div>
@@ -222,19 +239,19 @@
         </svg>
       </div>
       <div class="sum-info">
-        <span class="sum-label">Jumlah Transaksi</span>
-        <span class="sum-val success">{periodTxs.length} Catatan</span>
+        <span class="sum-label">Jumlah Transaksi ({reportMode === 'income' ? 'Pemasukan' : 'Pengeluaran'})</span>
+        <span class="sum-val success">{targetTxs.length} Catatan</span>
       </div>
     </div>
   </div>
 
 
-  {#if periodTxs.length === 0}
+  {#if targetTxs.length === 0}
     <!-- Empty State -->
     <div class="glass-card empty-reports">
       <div class="er-icon">📊</div>
-      <h3>Belum Ada Data</h3>
-      <p>Mulai catat pengeluaran Anda untuk melihat laporan dan analitik di sini.</p>
+      <h3>Belum Ada Data {reportMode === 'income' ? 'Pemasukan' : 'Pengeluaran'}</h3>
+      <p>Mulai catat {reportMode === 'income' ? 'pemasukan' : 'pengeluaran'} Anda untuk melihat laporan dan analitik di sini.</p>
     </div>
   {:else}
 
@@ -242,10 +259,12 @@
     <div class="glass-card chart-card">
       <div class="chart-card-header">
         <div>
-          <h3 class="chart-title">Tren Pengeluaran Bulanan</h3>
-          <p class="chart-subtitle">Perbandingan total pengeluaran per bulan dalam {reportPeriod} bulan terakhir</p>
+          <h3 class="chart-title">Tren {reportMode === 'income' ? 'Pemasukan' : 'Pengeluaran'} Bulanan</h3>
+          <p class="chart-subtitle">Perbandingan total {reportMode === 'income' ? 'pemasukan' : 'pengeluaran'} per bulan dalam {reportPeriod} bulan terakhir</p>
         </div>
-        <span class="chart-total-badge">{formatRupiah(totalPeriod)}</span>
+        <span class="chart-total-badge" style="color: {reportMode === 'income' ? 'var(--color-success)' : 'var(--color-danger)'}; background: {reportMode === 'income' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)'}">
+          {formatRupiah(currentModeTotal)}
+        </span>
       </div>
 
       <div class="bar-chart-wrapper">
@@ -256,7 +275,7 @@
               <div class="bar-outer">
                 <div
                   class="bar-inner {month.key === monthlyData[monthlyData.length - 1].key ? 'bar-current' : ''}"
-                  style="height: {barHeight(month.total)}px; --bar-color: {month.key === monthlyData[monthlyData.length - 1].key ? 'var(--color-primary)' : 'rgba(99,102,241,0.45)'}"
+                  style="height: {barHeight(month.total)}px; --bar-color: {month.key === monthlyData[monthlyData.length - 1].key ? (reportMode === 'income' ? 'var(--color-success)' : 'var(--color-primary)') : (reportMode === 'income' ? 'rgba(16,185,129,0.45)' : 'rgba(99,102,241,0.45)')}"
                 ></div>
               </div>
               <div class="bar-month-label">{month.label}</div>
@@ -271,8 +290,8 @@
 
       <!-- Category Breakdown -->
       <div class="glass-card">
-        <h3 class="section-title">Distribusi Kategori</h3>
-        <p class="section-sub">Komposisi pengeluaran berdasarkan kategori dalam {reportPeriod} bulan terakhir</p>
+        <h3 class="section-title">Distribusi Kategori {reportMode === 'income' ? 'Pemasukan' : 'Pengeluaran'}</h3>
+        <p class="section-sub">Komposisi {reportMode === 'income' ? 'pemasukan' : 'pengeluaran'} berdasarkan kategori dalam {reportPeriod} bulan terakhir</p>
 
         <div class="cat-bars">
           {#each categoryBreakdown as cat}
@@ -296,7 +315,7 @@
 
       <!-- Top Transactions -->
       <div class="glass-card">
-        <h3 class="section-title">Pengeluaran Terbesar</h3>
+        <h3 class="section-title">{reportMode === 'income' ? 'Pemasukan' : 'Pengeluaran'} Terbesar</h3>
         <p class="section-sub">5 transaksi dengan nominal paling tinggi dalam periode ini</p>
 
         <div class="top-tx-list">
@@ -321,10 +340,10 @@
     <div class="glass-card dow-card">
       <div class="chart-card-header">
         <div>
-          <h3 class="chart-title">Pola Pengeluaran per Hari</h3>
+          <h3 class="chart-title">Pola {reportMode === 'income' ? 'Pemasukan' : 'Pengeluaran'} per Hari</h3>
           <p class="chart-subtitle">
-            Hari paling boros:
-            <strong style="color: var(--color-primary)">
+            Hari paling {reportMode === 'income' ? 'banyak pemasukan' : 'boros'}:
+            <strong style="color: {reportMode === 'income' ? 'var(--color-success)' : 'var(--color-primary)'}">
               {busiestDay?.name || '-'}
             </strong>
             ({formatRupiah(busiestDay?.total || 0)})
@@ -400,8 +419,39 @@
 
   .period-tab.active {
     background: var(--color-primary);
-    color: #fff;
-    box-shadow: 0 2px 10px rgba(99,102,241,0.3);
+    color: white;
+    box-shadow: 0 4px 12px -4px var(--color-primary);
+  }
+
+  .mode-selector-row {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .mode-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--color-muted);
+    background: var(--bg-glass);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .mode-btn:hover { background: var(--bg-hover); }
+  .mode-btn.active-expense {
+    background: var(--color-danger);
+    color: white;
+    border-color: var(--color-danger);
+    box-shadow: 0 4px 12px -4px var(--color-danger);
+  }
+  .mode-btn.active-income {
+    background: var(--color-success);
+    color: white;
+    border-color: var(--color-success);
+    box-shadow: 0 4px 12px -4px var(--color-success);
   }
 
   /* Summary Row */

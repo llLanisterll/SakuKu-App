@@ -88,6 +88,16 @@
       .reduce((s, t) => s + Number(t.amount), 0)
   );
 
+  // ── Category Usage ──
+  const currentMonthExpenses = $derived.by(() => {
+    const usage = {};
+    thisMonthTransactions.filter(t => t.type === 'expense' || !t.type).forEach(t => {
+      const c = t.category || 'Lainnya';
+      usage[c] = (usage[c] || 0) + Number(t.amount);
+    });
+    return usage;
+  });
+
   // ── Category summary for donut ──
   const categorySummary = $derived.by(() => {
     const summary = {};
@@ -381,6 +391,72 @@
 
     </div>
   </div>
+
+  <!-- ── FINANCIAL PLAN STATUS ── -->
+  {#if auth.budgets.length > 0 || auth.savingGoals.length > 0}
+    <div class="glass-card fp-summary-panel mt-6">
+      <div class="panel-header" style="margin-bottom: 1.25rem;">
+        <h3 class="panel-title">Status Rencana Keuangan</h3>
+        <p class="panel-subtitle">Pantau anggaran bulanan dan target tabungan Anda.</p>
+      </div>
+      <div class="fp-summary-grid">
+        <!-- Budgets -->
+        <div class="fp-summary-col">
+          <h4 class="fp-summary-col-title">Anggaran Bulanan</h4>
+          {#if auth.budgets.length === 0}
+            <p class="empty-text">Belum ada anggaran terdaftar.</p>
+          {:else}
+            <div class="fp-summary-list">
+              {#each auth.budgets.slice(0, 3) as budget}
+                {@const spent = currentMonthExpenses[budget.category] || 0}
+                {@const limit = Number(budget.amount)}
+                {@const pct = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0}
+                <div class="fp-mini-item">
+                  <div class="fp-mini-top">
+                    <span class="fp-mini-name">{budget.category}</span>
+                    <span class="fp-mini-val" style="color: {spent > limit ? 'var(--color-danger)' : 'var(--text-foreground)'}">{formatRupiahShort(spent)} / {formatRupiahShort(limit)}</span>
+                  </div>
+                  <div class="fp-mini-track">
+                    <div class="fp-mini-fill" style="width: {pct}%; background: {pct >= 100 ? 'var(--color-danger)' : pct > 80 ? 'var(--color-warning)' : 'var(--color-primary)'}"></div>
+                  </div>
+                </div>
+              {/each}
+              {#if auth.budgets.length > 3}
+                <button class="btn-link" style="align-self: flex-start; margin-top:0.5rem;" onclick={() => ui.currentTab = 'planning'}>Lihat {auth.budgets.length - 3} lainnya →</button>
+              {/if}
+            </div>
+          {/if}
+        </div>
+
+        <!-- Saving Goals -->
+        <div class="fp-summary-col">
+          <h4 class="fp-summary-col-title">Target Tabungan</h4>
+          {#if auth.savingGoals.length === 0}
+            <p class="empty-text">Belum ada target tabungan.</p>
+          {:else}
+            <div class="fp-summary-list">
+              {#each auth.savingGoals.slice(0, 3) as goal}
+                {@const pct = Math.min((goal.current / goal.target) * 100, 100)}
+                <div class="fp-mini-item">
+                  <div class="fp-mini-top">
+                    <span class="fp-mini-name">{goal.name}</span>
+                    <span class="fp-mini-val" style="color: {pct >= 100 ? 'var(--color-success)' : 'var(--text-foreground)'}">{formatRupiahShort(goal.current)} / {formatRupiahShort(goal.target)}</span>
+                  </div>
+                  <div class="fp-mini-track">
+                    <div class="fp-mini-fill" style="width: {pct}%; background: {pct >= 100 ? 'var(--color-success)' : 'var(--color-primary)'}"></div>
+                  </div>
+                </div>
+              {/each}
+              {#if auth.savingGoals.length > 3}
+                <button class="btn-link" style="align-self: flex-start; margin-top:0.5rem;" onclick={() => ui.currentTab = 'planning'}>Lihat {auth.savingGoals.length - 3} lainnya →</button>
+              {/if}
+            </div>
+          {/if}
+        </div>
+      </div>
+    </div>
+  {/if}
+
 </div>
 
 <style>
@@ -658,6 +734,37 @@
   .legend-name { font-weight: 600; color: var(--text-foreground); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .legend-pct { color: var(--color-muted); font-weight: 600; font-size: 0.75rem; }
   .legend-amt { font-weight: 700; color: var(--text-foreground); font-size: 0.75rem; }
+
+  /* ── FINANCIAL PLAN STATUS ── */
+  .fp-summary-panel { padding: 1.5rem; }
+  .fp-summary-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  @media (min-width: 768px) {
+    .fp-summary-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
+  }
+  .fp-summary-col {
+    display: flex; flex-direction: column; gap: 1rem;
+  }
+  .fp-summary-col-title {
+    font-size: 0.9rem; font-weight: 700; color: var(--color-muted);
+    text-transform: uppercase; letter-spacing: 0.05em; margin: 0;
+  }
+  .fp-summary-list {
+    display: flex; flex-direction: column; gap: 0.875rem;
+  }
+  .fp-mini-item { display: flex; flex-direction: column; gap: 0.4rem; }
+  .fp-mini-top { display: flex; justify-content: space-between; align-items: center; }
+  .fp-mini-name { font-size: 0.9rem; font-weight: 600; color: var(--text-foreground); }
+  .fp-mini-val { font-size: 0.8rem; font-weight: 700; }
+  .fp-mini-track {
+    width: 100%; height: 6px;
+    background: var(--bg-glass);
+    border-radius: 100px; overflow: hidden;
+  }
+  .fp-mini-fill { height: 100%; border-radius: 100px; transition: width 0.4s ease; }
 
   /* ── TEMPLATES ── */
   .right-col { display: flex; flex-direction: column; gap: 1.5rem; }
