@@ -409,10 +409,7 @@
     box-shadow: 0 4px 10px rgba(99, 102, 241, 0.35);
   }
 
-  .app-sidebar.admin-sidebar {
-    background: linear-gradient(to bottom, #1e1e1e, #121212);
-    border-right: 1px solid rgba(255,255,255,0.05);
-  }
+
 
   .global-loader-overlay {
     position: fixed;

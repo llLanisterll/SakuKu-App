@@ -447,8 +447,9 @@ class AuthState {
       return profiles.map(p => ({
         id: p.id,
         username: p.username,
-        transactionCount: 'Tersembunyi',
-        totalExpense: 0
+        transactionCount: 0,
+        totalExpense: 0,
+        monthlyExpense: 0
       }));
     } catch(e) {
       console.error(e);
