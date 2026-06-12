@@ -28,8 +28,8 @@
   async function handleSaveBudget(e) {
     if (e) e.preventDefault();
     if (!budgetCat) { ui.addNotification('Pilih kategori terlebih dahulu', 'error'); return; }
-    const amountNum = Number(budgetAmount.replace(/[^0-9]/g, ''));
-    if (isNaN(amountNum) || amountNum < 0) { ui.addNotification('Nominal tidak valid', 'error'); return; }
+    const amountNum = Number(String(budgetAmount).replace(/[^0-9]/g, ''));
+    if (isNaN(amountNum) || amountNum <= 0) { ui.addNotification('Nominal tidak valid', 'error'); return; }
     try {
       await auth.saveBudget(budgetCat, amountNum);
       ui.addNotification('Anggaran berhasil disimpan', 'success');
@@ -47,9 +47,9 @@
   async function handleAddSavingGoal(e) {
     if (e) e.preventDefault();
     if (!goalName.trim()) return;
-    const targetNum = Number(goalTarget.replace(/[^0-9]/g, ''));
-    const currentNum = Number(goalCurrent.replace(/[^0-9]/g, '')) || 0;
-    if (targetNum <= 0) { ui.addNotification('Target tidak valid', 'error'); return; }
+    const targetNum = Number(String(goalTarget).replace(/[^0-9]/g, ''));
+    const currentNum = Number(String(goalCurrent).replace(/[^0-9]/g, '')) || 0;
+    if (isNaN(targetNum) || targetNum <= 0) { ui.addNotification('Target tidak valid', 'error'); return; }
     const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
     const color = colors[Math.floor(Math.random() * colors.length)];
     try {
@@ -62,8 +62,8 @@
   async function handleAddProgress(e) {
     if (e) e.preventDefault();
     if (!selectedGoal) return;
-    const amountNum = Number(progressAmount.replace(/[^0-9]/g, ''));
-    if (amountNum <= 0) return;
+    const amountNum = Number(String(progressAmount).replace(/[^0-9]/g, ''));
+    if (isNaN(amountNum) || amountNum <= 0) return;
     try {
       await auth.updateSavingGoalProgress(selectedGoal.id, amountNum);
       ui.addNotification('Tabungan berhasil ditambahkan!', 'success');
