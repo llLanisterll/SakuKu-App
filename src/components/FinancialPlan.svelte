@@ -170,9 +170,9 @@
   <div class="tab-content mt-6">
     
     {#if activeTab === 'budget'}
-      <div class="budget-layout grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="budget-layout grid-3">
         <!-- FORM ANGGARAN -->
-        <div class="glass-card form-panel-card lg:col-span-1">
+        <div class="glass-card form-panel-card" style="grid-column: span 1;">
           <div class="panel-header border-b border-glass pb-4 mb-4">
             <h3 class="font-bold text-lg">Atur Anggaran</h3>
             <p class="text-sm text-muted">Batas maksimal per kategori (Isi 0 untuk menghapus).</p>
@@ -202,7 +202,7 @@
         </div>
 
         <!-- LIST ANGGARAN -->
-        <div class="glass-card list-panel-card lg:col-span-2">
+        <div class="glass-card list-panel-card" style="grid-column: span 2;">
           <div class="panel-header border-b border-glass pb-4 mb-4 flex justify-between items-center">
             <h3 class="font-bold text-lg">Pantauan Anggaran Bulan Ini</h3>
           </div>
@@ -257,9 +257,9 @@
     
     {:else if activeTab === 'saving'}
       
-      <div class="saving-layout grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="saving-layout grid-3">
         <!-- FORM SAVING -->
-        <div class="glass-card form-panel-card lg:col-span-1">
+        <div class="glass-card form-panel-card" style="grid-column: span 1;">
           <div class="panel-header border-b border-glass pb-4 mb-4">
             <h3 class="font-bold text-lg">Impian Baru</h3>
             <p class="text-sm text-muted">Buat target tabungan untuk diwujudkan.</p>
@@ -292,12 +292,12 @@
         </div>
 
         <!-- LIST SAVING GOALS -->
-        <div class="glass-card list-panel-card lg:col-span-2">
+        <div class="glass-card list-panel-card" style="grid-column: span 2;">
           <div class="panel-header border-b border-glass pb-4 mb-4 flex justify-between items-center">
             <h3 class="font-bold text-lg">Progres Impian Anda</h3>
           </div>
 
-          <div class="goals-grid grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="goals-grid grid-2">
             {#if auth.savingGoals.length === 0}
               <div class="empty-state md:col-span-2 text-center py-8">
                 <p class="text-muted">Anda belum memiliki target tabungan.</p>
@@ -398,5 +398,16 @@
   }
   .text-success {
     color: #10b981;
+  }
+  
+  @media (max-width: 1024px) {
+    .budget-layout > div, .saving-layout > div {
+      grid-column: span 3 !important;
+    }
+  }
+  @media (max-width: 768px) {
+    .goals-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

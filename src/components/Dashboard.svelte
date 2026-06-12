@@ -111,35 +111,35 @@
   </div>
 
   <!-- Cards Grid Utama (3 Kolom) -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <div class="grid-3">
     <!-- Card Pemasukan -->
-    <div class="glass-card interactive-card metric-card border-l-4" style="border-left-color: var(--color-success)">
-      <div class="card-icon-wrapper bg-success-light text-success">
+    <div class="glass-card interactive-card metric-card" style="border-left: 4px solid var(--color-success)">
+      <div class="card-icon-wrapper" style="background-color: rgba(16, 185, 129, 0.1); color: var(--color-success);">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
         </svg>
       </div>
       <div class="metric-info">
         <span class="metric-label">Pemasukan Bulan Ini</span>
-        <h2 class="metric-value text-success">{formatRupiah(totalIncome)}</h2>
+        <h2 class="metric-value" style="color: var(--color-success);">{formatRupiah(totalIncome)}</h2>
       </div>
     </div>
 
     <!-- Card Pengeluaran -->
-    <div class="glass-card interactive-card metric-card border-l-4" style="border-left-color: var(--color-danger)">
-      <div class="card-icon-wrapper expense-icon bg-danger-light text-danger">
+    <div class="glass-card interactive-card metric-card" style="border-left: 4px solid var(--color-danger)">
+      <div class="card-icon-wrapper expense-icon" style="background-color: rgba(239, 68, 68, 0.1); color: var(--color-danger);">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15" />
         </svg>
       </div>
       <div class="metric-info">
         <span class="metric-label">Pengeluaran Bulan Ini</span>
-        <h2 class="metric-value text-danger">{formatRupiah(totalExpense)}</h2>
+        <h2 class="metric-value" style="color: var(--color-danger);">{formatRupiah(totalExpense)}</h2>
       </div>
     </div>
 
     <!-- Card Saldo -->
-    <div class="glass-card interactive-card metric-card border-l-4" style="border-left-color: var(--color-primary)">
+    <div class="glass-card interactive-card metric-card" style="border-left: 4px solid var(--color-primary)">
       <div class="card-icon-wrapper text-primary" style="background-color: rgba(var(--color-primary-rgb), 0.1);">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3" />
@@ -147,7 +147,7 @@
       </div>
       <div class="metric-info">
         <span class="metric-label">Sisa Saldo Kas</span>
-        <h2 class="metric-value {netBalance < 0 ? 'text-danger' : 'text-primary'}">{formatRupiah(netBalance)}</h2>
+        <h2 class="metric-value" style="color: {netBalance < 0 ? 'var(--color-danger)' : 'var(--color-primary)'};">{formatRupiah(netBalance)}</h2>
       </div>
     </div>
   </div>
