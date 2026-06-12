@@ -6,6 +6,9 @@
 
   // --- BUDGET ---
   let budgetAmount = $state('');
+  let budgetCategory = $state('GLOBAL_MONTH');
+  
+  const expenseCats = $derived(auth.categories.filter(c => c.type === 'expense'));
 
   const totalCurrentMonthExpenses = $derived.by(() => {
     const now = new Date();
@@ -26,13 +29,51 @@
 
   async function handleSaveBudget(e) {
     if (e) e.preventDefault();
+    if (!budgetCategory || budgetCategory === '__ADD_NEW__') {
+      ui.addNotification('Pilih kategori yang valid', 'error');
+      return;
+    }
     const amountNum = Number(String(budgetAmount).replace(/[^0-9]/g, ''));
     if (isNaN(amountNum) || amountNum <= 0) { ui.addNotification('Nominal tidak valid', 'error'); return; }
     try {
-      await auth.saveBudget('GLOBAL_MONTH', amountNum);
-      ui.addNotification('Anggaran bulanan berhasil disimpan', 'success');
+      await auth.saveBudget(budgetCategory, amountNum);
+      ui.addNotification('Anggaran berhasil disimpan', 'success');
       budgetAmount = '';
+      budgetCategory = 'GLOBAL_MONTH';
     } catch (err) { ui.addNotification(err.message, 'error'); }
+  }
+
+  function handleCategoryChange(e) {
+    if (e.target.value === '__ADD_NEW__') {
+      ui.askPrompt({
+        title: 'Buat Kategori Baru',
+        message: 'Masukkan nama kategori pengeluaran baru:',
+        confirmText: 'Buat',
+        onConfirm: async (val) => {
+          if (!val.trim()) { budgetCategory = 'GLOBAL_MONTH'; return; }
+          try {
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            await auth.addCategory(val.trim(), 'expense', color);
+            ui.addNotification('Kategori berhasil ditambahkan', 'success');
+            budgetCategory = val.trim();
+          } catch(err) {
+            ui.addNotification(err.message, 'error');
+            budgetCategory = 'GLOBAL_MONTH';
+          }
+        },
+        onCancel: () => { budgetCategory = 'GLOBAL_MONTH'; }
+      });
+    } else if (e.target.value !== 'GLOBAL_MONTH') {
+      const existing = auth.budgets.find(b => b.category === e.target.value);
+      if (existing) {
+        budgetAmount = existing.amount;
+      } else {
+        budgetAmount = '';
+      }
+    } else {
+      budgetAmount = '';
+    }
   }
 
   // --- SAVING GOALS ---
@@ -143,6 +184,19 @@
 
         <form onsubmit={handleSaveBudget} class="fp-form">
           <div class="fp-field">
+            <label class="fp-label" for="b-cat">Kategori Anggaran</label>
+            <select id="b-cat" bind:value={budgetCategory} onchange={handleCategoryChange} class="fp-input" required>
+              <option value="GLOBAL_MONTH">🌍 Anggaran Total Bulan Ini</option>
+              <option disabled>──────────</option>
+              {#each expenseCats as cat}
+                <option value={cat.name}>{cat.name}</option>
+              {/each}
+              <option disabled>──────────</option>
+              <option value="__ADD_NEW__">+ Buat Kategori Baru...</option>
+            </select>
+          </div>
+
+          <div class="fp-field">
             <label class="fp-label" for="b-amt">Batas Maksimal (Rp)</label>
             <div class="fp-input-wrap">
               <span class="fp-input-prefix">Rp</span>
@@ -150,7 +204,7 @@
                 type="text" inputmode="numeric" id="b-amt" min="0"
                 value={budgetAmount ? Number(String(budgetAmount).replace(/[^0-9]/g, '')).toLocaleString('id-ID') : ''}
                 oninput={(e) => { budgetAmount = e.target.value.replace(/[^0-9]/g, ''); }}
-                placeholder={globalBudget ? formatRupiah(globalBudget.amount).replace('Rp', '').trim() : "0"}
+                placeholder={budgetCategory === 'GLOBAL_MONTH' && globalBudget ? formatRupiah(globalBudget.amount).replace('Rp', '').trim() : "0"}
                 required class="fp-input fp-input-right"
               />
             </div>
@@ -167,22 +221,30 @@
           <p class="fp-card-subtitle">Pantau kesehatan finansial Anda secara keseluruhan.</p>
         </div>
 
-        {#if !globalBudget}
+        {#if !globalBudget && auth.budgets.length === 0}
           <div class="fp-empty">
             <span class="fp-empty-icon">📊</span>
-            <p>Belum ada batas anggaran bulanan.</p>
-            <p class="fp-empty-sub">Gunakan form di sebelah kiri untuk menetapkan batasan pengeluaran bulanan Anda.</p>
+            <p>Belum ada batas anggaran bulanan atau kategori.</p>
+            <p class="fp-empty-sub">Gunakan form di sebelah kiri untuk menetapkan batasan pengeluaran Anda.</p>
           </div>
         {:else}
-            {@const spent = totalCurrentMonthExpenses}
-            {@const limit = Number(globalBudget.amount)}
-            {@const pct = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0}
-            {@const isOver = spent > limit}
           <div class="fp-budget-list" style="margin-top: 1rem;">
+            <!-- GLOBAL BUDGET & DAILY BUDGET -->
+            {#if globalBudget}
+              {@const spent = totalCurrentMonthExpenses}
+              {@const limit = Number(globalBudget.amount)}
+              {@const pct = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0}
+              {@const isOver = spent > limit}
+              
+              {@const today = new Date()}
+              {@const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()}
+              {@const remainingDays = Math.max(1, daysInMonth - today.getDate() + 1)}
+              {@const dailyLimit = Math.max(0, (limit - spent) / remainingDays)}
 
+              <!-- Main Global Card -->
               <div class="fp-budget-item {isOver ? 'is-over' : ''}" style="border-top: 4px solid {getProgressColor(pct)}; padding: 1.5rem;">
                 <div class="fp-budget-header-row">
-                  <h4 class="fp-budget-cat" style="font-size: 1.2rem;">Anggaran Bulan Ini</h4>
+                  <h4 class="fp-budget-cat" style="font-size: 1.2rem;">🌍 Anggaran Bulan Ini</h4>
                   <div class="fp-sisa-badge" style="background-color: {isOver ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'}; color: {isOver ? '#ef4444' : '#10b981'}; font-size: 0.95rem; padding: 0.5rem 1rem;">
                     {isOver ? 'Anggaran Habis' : 'Sisa ' + formatRupiah(limit - spent)}
                   </div>
@@ -204,12 +266,50 @@
                   <div class="fp-progress-fill" style="width: {pct}%; background-color: {getProgressColor(pct)};"></div>
                 </div>
 
-                <div class="fp-budget-foot-clean" style="margin-top: 1rem;">
-                  <span style="color: {isOver ? '#ef4444' : 'var(--color-muted)'}; font-weight: 700; font-size: 0.9rem;">
-                    {isOver ? '⚠ Melebihi Anggaran!' : `${Math.round(pct)}% Terpakai`}
-                  </span>
+                <!-- Daily Budget Sub-card -->
+                <div style="margin-top: 1.5rem; padding: 1rem; background: var(--color-background); border-radius: 0.5rem; border: 1px solid var(--color-border); display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <div style="font-size: 0.85rem; color: var(--color-muted); margin-bottom: 0.25rem;">Rekomendasi Anggaran Harian Pintar</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--color-primary);">{formatRupiah(dailyLimit)} <span style="font-size: 0.8rem; color: var(--color-muted); font-weight: 400;">/ hari</span></div>
+                  </div>
+                  <div style="font-size: 0.8rem; color: var(--color-muted); text-align: right;">
+                    Sisa {remainingDays} Hari<br>Di Bulan Ini
+                  </div>
                 </div>
               </div>
+            {/if}
+
+            <!-- CATEGORY BUDGETS -->
+            {#each auth.budgets.filter(b => b.category !== 'GLOBAL_MONTH') as budget (budget.id)}
+              {@const catSpent = auth.transactions
+                .filter(t => t.type === 'expense' && t.category === budget.category && new Date(t.date).getMonth() === new Date().getMonth() && new Date(t.date).getFullYear() === new Date().getFullYear())
+                .reduce((s, t) => s + Number(t.amount), 0)}
+              {@const catLimit = Number(budget.amount)}
+              {@const catPct = catLimit > 0 ? Math.min((catSpent / catLimit) * 100, 100) : 0}
+              {@const catOver = catSpent > catLimit}
+              <div class="fp-budget-item {catOver ? 'is-over' : ''}" style="border-top: 3px solid {getProgressColor(catPct)};">
+                <div class="fp-budget-header-row">
+                  <h4 class="fp-budget-cat">{budget.category}</h4>
+                  <div class="fp-sisa-badge" style="background-color: {catOver ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'}; color: {catOver ? '#ef4444' : '#10b981'};">
+                    {catOver ? 'Habis' : 'Sisa ' + formatRupiah(catLimit - catSpent)}
+                  </div>
+                </div>
+                <div class="fp-budget-stats-row">
+                  <div class="fp-stat-col">
+                    <span class="fp-stat-lbl">Terpakai</span>
+                    <strong class="fp-stat-val">{formatRupiah(catSpent)}</strong>
+                  </div>
+                  <div class="fp-stat-divider"></div>
+                  <div class="fp-stat-col">
+                    <span class="fp-stat-lbl">Batas</span>
+                    <strong class="fp-stat-val" style="color: var(--color-muted);">{formatRupiah(catLimit)}</strong>
+                  </div>
+                </div>
+                <div class="fp-progress-track">
+                  <div class="fp-progress-fill" style="width: {catPct}%; background-color: {getProgressColor(catPct)};"></div>
+                </div>
+              </div>
+            {/each}
           </div>
         {/if}
       </div>

@@ -565,15 +565,19 @@
             {@const remaining = globalBudget - simulated}
             {@const pct = Math.min(100, Math.max(0, (simulated / globalBudget) * 100))}
             {@const isOver = remaining < 0}
+            {@const today = new Date()}
+            {@const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()}
+            {@const remainingDays = Math.max(1, daysInMonth - today.getDate() + 1)}
+            {@const dailyLimit = Math.max(0, remaining / remainingDays)}
 
             <div class="ee-budget-card {draftAmt > 0 ? 'is-draft' : ''}">
               <div class="ee-budget-card-head">
                 <div class="ee-budget-cat">
                   <span class="ee-cat-dot" style="background-color: var(--color-primary)"></span>
-                  <span class="ee-cat-name">Total Pengeluaran</span>
+                  <span class="ee-cat-name">Total Pengeluaran Bulan Ini</span>
                 </div>
                 <div class="ee-budget-remaining" style="color: {isOver ? 'var(--color-danger)' : 'var(--color-primary)'};">
-                  <span class="ee-sisa-lbl">Sisa</span>
+                  <span class="ee-sisa-lbl">Sisa Bulanan</span>
                   <strong>{isOver ? 'Habis' : formatRupiah(remaining)}</strong>
                 </div>
               </div>
@@ -581,8 +585,17 @@
               <div class="ee-mini-progress-bg">
                 <div class="ee-mini-progress-bar" style="width: {pct}%; background-color: {isOver ? 'var(--color-danger)' : 'var(--color-primary)'};"></div>
               </div>
+              
+              <!-- Daily Budget Sub Tracker -->
+              <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 0.8rem; color: var(--color-muted);">Sisa Jatah Harian Pintar:</div>
+                <div style="font-size: 0.95rem; font-weight: 700; color: {dailyLimit > 0 ? 'var(--color-primary)' : 'var(--color-danger)'};">
+                  {formatRupiah(dailyLimit)} <span style="font-weight: 400; font-size: 0.7rem; color: var(--color-muted);">/ hari</span>
+                </div>
+              </div>
+
               {#if draftAmt > 0}
-                <div class="ee-budget-hint">Termasuk Rp {formatRupiahShort(draftAmt)} dari form ini.</div>
+                <div class="ee-budget-hint" style="margin-top: 0.5rem;">Termasuk Rp {formatRupiahShort(draftAmt)} dari draft form ini.</div>
               {/if}
             </div>
           {:else}
