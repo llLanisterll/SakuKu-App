@@ -63,6 +63,8 @@ class AuthState {
   categories = $state([]);
   paymentMethods = $state([]);
   templates = $state([]);
+  budgets = $state([]);
+  savingGoals = $state([]);
 
   constructor() {
     if (isBrowser) {
@@ -116,22 +118,28 @@ class AuthState {
 
     try {
       // Fetch concurrently
-      const [txRes, catRes, tplRes, pmRes] = await Promise.all([
+      const [txRes, catRes, tplRes, pmRes, budRes, savRes] = await Promise.all([
         supabase.from('transactions').select('*').order('date', { ascending: false }).order('created_at', { ascending: false }),
         supabase.from('categories').select('*').order('created_at', { ascending: true }),
         supabase.from('templates').select('*').order('created_at', { ascending: true }),
-        supabase.from('payment_methods').select('*').order('created_at', { ascending: true })
+        supabase.from('payment_methods').select('*').order('created_at', { ascending: true }),
+        supabase.from('budgets').select('*').order('created_at', { ascending: true }),
+        supabase.from('saving_goals').select('*').order('created_at', { ascending: true })
       ]);
 
       if (txRes.error) throw txRes.error;
       if (catRes.error) throw catRes.error;
       if (tplRes.error) throw tplRes.error;
       if (pmRes.error) throw pmRes.error;
+      if (budRes.error) throw budRes.error;
+      if (savRes.error) throw savRes.error;
 
       this.transactions = txRes.data;
       this.categories = catRes.data;
       this.templates = tplRes.data;
       this.paymentMethods = pmRes.data;
+      this.budgets = budRes.data;
+      this.savingGoals = savRes.data;
 
     } catch (e) {
       console.error("Error loading data", e);
@@ -208,6 +216,8 @@ class AuthState {
     this.categories = [];
     this.paymentMethods = [];
     this.templates = [];
+    this.budgets = [];
+    this.savingGoals = [];
     if (isBrowser) {
       document.documentElement.classList.remove('light-theme');
     }
@@ -424,7 +434,98 @@ class AuthState {
       this.templates = this.templates.filter(t => t.id !== id);
     } catch(e) {
       console.error(e);
-      ui.addNotification('Gagal menghapus template', 'error');
+      throw new Error('Gagal menghapus template');
+    } finally {
+      ui.isLoading = false;
+    }
+  }
+
+  // Budgets
+  async saveBudget(category, amount) {
+    if (!this.currentUser) return;
+    ui.isLoading = true;
+    try {
+      const existing = this.budgets.find(b => b.category === category);
+      if (existing) {
+        if (amount === 0) {
+          // Delete
+          await supabase.from('budgets').delete().eq('id', existing.id);
+          this.budgets = this.budgets.filter(b => b.id !== existing.id);
+        } else {
+          // Update
+          const { data, error } = await supabase.from('budgets').update({ amount }).eq('id', existing.id).select().single();
+          if (error) throw error;
+          this.budgets = this.budgets.map(b => b.id === data.id ? data : b);
+        }
+      } else {
+        if (amount > 0) {
+          // Insert
+          const newBudget = { user_id: this.currentUser.id, category, amount };
+          const { data, error } = await supabase.from('budgets').insert([newBudget]).select().single();
+          if (error) throw error;
+          this.budgets = [...this.budgets, data];
+        }
+      }
+    } catch(e) {
+      console.error(e);
+      throw new Error('Gagal menyimpan anggaran');
+    } finally {
+      ui.isLoading = false;
+    }
+  }
+
+  // Saving Goals
+  async addSavingGoal(name, targetAmount, currentAmount = 0, color = '#10b981') {
+    if (!this.currentUser) return;
+    ui.isLoading = true;
+    try {
+      const newGoal = {
+        user_id: this.currentUser.id,
+        name,
+        target_amount: targetAmount,
+        current_amount: currentAmount,
+        color
+      };
+      const { data, error } = await supabase.from('saving_goals').insert([newGoal]).select().single();
+      if (error) throw error;
+      this.savingGoals = [...this.savingGoals, data];
+    } catch(e) {
+      console.error(e);
+      throw new Error('Gagal membuat tujuan tabungan');
+    } finally {
+      ui.isLoading = false;
+    }
+  }
+
+  async updateSavingGoalProgress(id, amountToAdd) {
+    if (!this.currentUser) return;
+    ui.isLoading = true;
+    try {
+      const goal = this.savingGoals.find(g => g.id === id);
+      if (!goal) throw new Error('Tabungan tidak ditemukan');
+      
+      const newAmount = Number(goal.current_amount) + Number(amountToAdd);
+      const { data, error } = await supabase.from('saving_goals').update({ current_amount: newAmount }).eq('id', id).select().single();
+      if (error) throw error;
+      this.savingGoals = this.savingGoals.map(g => g.id === id ? data : g);
+    } catch(e) {
+      console.error(e);
+      throw new Error('Gagal memperbarui tabungan');
+    } finally {
+      ui.isLoading = false;
+    }
+  }
+
+  async deleteSavingGoal(id) {
+    if (!this.currentUser) return;
+    ui.isLoading = true;
+    try {
+      const { error } = await supabase.from('saving_goals').delete().eq('id', id);
+      if (error) throw error;
+      this.savingGoals = this.savingGoals.filter(g => g.id !== id);
+    } catch(e) {
+      console.error(e);
+      throw new Error('Gagal menghapus tabungan');
     } finally {
       ui.isLoading = false;
     }
@@ -462,13 +563,17 @@ class AuthState {
         supabase.from('transactions').delete().eq('user_id', this.currentUser.id),
         supabase.from('templates').delete().eq('user_id', this.currentUser.id),
         supabase.from('categories').delete().eq('user_id', this.currentUser.id),
-        supabase.from('payment_methods').delete().eq('user_id', this.currentUser.id)
+        supabase.from('payment_methods').delete().eq('user_id', this.currentUser.id),
+        supabase.from('budgets').delete().eq('user_id', this.currentUser.id),
+        supabase.from('saving_goals').delete().eq('user_id', this.currentUser.id)
       ]);
       
       this.transactions = [];
       this.templates = [];
       this.categories = [];
       this.paymentMethods = [];
+      this.budgets = [];
+      this.savingGoals = [];
       
       // Tambahkan default categories jika perlu, tapi untuk sekarang kita biarkan kosong
       // atau biarkan user membuat baru karena Supabase tidak secara otomatis membuat default categories.

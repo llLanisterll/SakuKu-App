@@ -5,6 +5,7 @@
 
   // --- KATEGORI STATES ---
   let catName = $state('');
+  let catType = $state('expense'); // 'expense' or 'income'
   let catColor = $state(CATEGORY_COLORS[0].hex);
   let errorMessage = $state('');
 
@@ -17,7 +18,7 @@
     errorMessage = '';
 
     try {
-      await auth.addCategory(catName, 'expense', catColor);
+      await auth.addCategory(catName, catType, catColor);
       ui.addNotification(`Kategori "${catName}" berhasil ditambahkan!`, 'success');
       catName = '';
     } catch (err) {
@@ -185,12 +186,20 @@
 
           <form onsubmit={handleAddCategory} class="category-form">
             <div class="form-group">
+              <label for="cat-type">Tipe Kategori</label>
+              <select id="cat-type" bind:value={catType} class="form-select">
+                <option value="expense">Pengeluaran (Expense)</option>
+                <option value="income">Pemasukan (Income)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
               <label for="cat-name">Nama Kategori</label>
               <input 
                 type="text" 
                 id="cat-name"
                 bind:value={catName} 
-                placeholder="Contoh: Pendidikan, Olahraga, Perawatan" 
+                placeholder="Contoh: Pendidikan, Bonus, dll" 
                 required 
                 maxlength="20"
               />
@@ -237,6 +246,7 @@
           </div>
 
           <div class="cat-items-list">
+            <h4 class="section-label mb-2 text-sm font-semibold text-muted">Pengeluaran</h4>
             {#each auth.categories.filter(c => c.type === 'expense') as cat (cat.id)}
               <div class="cat-item-row">
                 <div class="cat-meta">
@@ -254,7 +264,28 @@
                 {/if}
               </div>
             {:else}
-              <p class="empty-text">Belum ada kategori yang dibuat.</p>
+              <p class="empty-text">Belum ada kategori pengeluaran.</p>
+            {/each}
+
+            <h4 class="section-label mt-4 mb-2 text-sm font-semibold text-muted">Pemasukan</h4>
+            {#each auth.categories.filter(c => c.type === 'income') as cat (cat.id)}
+              <div class="cat-item-row">
+                <div class="cat-meta">
+                  <span class="cat-color-dot" style="background-color: {cat.color}"></span>
+                  <span class="cat-name-lbl">{cat.name}</span>
+                </div>
+                {#if cat.name.toLowerCase() !== 'lainnya'}
+                  <button type="button" class="btn-delete-cat-icon" onclick={() => handleDeleteCategory(cat.id, cat.name)} title="Hapus">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-1.5 12a1.5 1.5 0 01-1.5 1.5H7.5A1.5 1.5 0 016 20.25l-1.5-12m16.5 0h-18m16.5 0a2.25 2.25 0 00-2.25-2.25H16.5m-9-2.25h9M9 5.25V3a.75.75 0 01.75-.75h4.5a.75.75 0 01.75.75v2.25" />
+                    </svg>
+                  </button>
+                {:else}
+                  <span class="default-badge-text">Sistem</span>
+                {/if}
+              </div>
+            {:else}
+              <p class="empty-text">Belum ada kategori pemasukan.</p>
             {/each}
           </div>
         </div>

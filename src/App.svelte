@@ -2,6 +2,8 @@
   import Auth from './components/Auth.svelte';
   import Dashboard from './components/Dashboard.svelte';
   import ExpenseEntry from './components/ExpenseEntry.svelte';
+  import IncomeEntry from './components/IncomeEntry.svelte';
+  import FinancialPlan from './components/FinancialPlan.svelte';
   import DataManager from './components/DataManager.svelte';
   import TransactionHistory from './components/TransactionHistory.svelte';
   import Settings from './components/Settings.svelte';
@@ -192,10 +194,24 @@
         </button>
 
         <button class="nav-item-btn {ui.currentTab === 'input' ? 'is-active' : ''}" onclick={() => ui.currentTab = 'input'}>
-          <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg class="nav-icon text-danger" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span class="nav-label">Catat Pengeluaran</span>
+        </button>
+
+        <button class="nav-item-btn {ui.currentTab === 'income' ? 'is-active' : ''}" onclick={() => ui.currentTab = 'income'}>
+          <svg class="nav-icon text-success" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span class="nav-label">Pemasukan</span>
+        </button>
+
+        <button class="nav-item-btn {ui.currentTab === 'planning' ? 'is-active' : ''}" onclick={() => ui.currentTab = 'planning'}>
+          <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+          </svg>
+          <span class="nav-label">Rencana Keuangan</span>
         </button>
 
         <button class="nav-item-btn {ui.currentTab === 'data' ? 'is-active' : ''}" onclick={() => ui.currentTab = 'data'}>
@@ -294,6 +310,10 @@
           <Dashboard />
         {:else if ui.currentTab === 'input'}
           <ExpenseEntry />
+        {:else if ui.currentTab === 'income'}
+          <IncomeEntry />
+        {:else if ui.currentTab === 'planning'}
+          <FinancialPlan />
         {:else if ui.currentTab === 'history'}
           <TransactionHistory />
         {:else if ui.currentTab === 'reports'}
@@ -316,10 +336,24 @@
       </button>
 
       <button class="mobile-nav-btn {ui.currentTab === 'input' ? 'is-active' : ''}" onclick={() => ui.currentTab = 'input'}>
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg class="text-danger" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span>Catat</span>
+        <span>Keluar</span>
+      </button>
+
+      <button class="mobile-nav-btn {ui.currentTab === 'income' ? 'is-active' : ''}" onclick={() => ui.currentTab = 'income'}>
+        <svg class="text-success" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>Masuk</span>
+      </button>
+
+      <button class="mobile-nav-btn {ui.currentTab === 'planning' ? 'is-active' : ''}" onclick={() => ui.currentTab = 'planning'}>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+        </svg>
+        <span>Rencana</span>
       </button>
 
       <button class="mobile-nav-btn {ui.currentTab === 'reports' ? 'is-active' : ''}" onclick={() => ui.currentTab = 'reports'}>
@@ -679,7 +713,12 @@
     background-color: var(--bg-sidebar);
     border-top: 1px solid var(--border-color);
     display: flex;
-    justify-content: space-around;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 0.5rem;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
     padding: 0.375rem 0.5rem;
     padding-bottom: calc(0.375rem + env(safe-area-inset-bottom, 0px));
     z-index: 50;
@@ -688,12 +727,18 @@
     box-shadow: 0 -1px 0 var(--border-color);
   }
 
+  .mobile-bottom-navbar::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+
   @media (min-width: 1024px) { .mobile-bottom-navbar { display: none; } }
 
   .mobile-nav-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
+    flex-shrink: 0;
+    min-width: 60px;
     justify-content: center;
     gap: 0.1875rem;
     background: none; border: none;
