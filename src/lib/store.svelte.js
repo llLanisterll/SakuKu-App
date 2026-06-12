@@ -61,6 +61,7 @@ class AuthState {
   currentUser = $state(null);
   transactions = $state([]);
   categories = $state([]);
+  paymentMethods = $state([]);
   templates = $state([]);
 
   constructor() {
@@ -115,19 +116,22 @@ class AuthState {
 
     try {
       // Fetch concurrently
-      const [txRes, catRes, tplRes] = await Promise.all([
+      const [txRes, catRes, tplRes, pmRes] = await Promise.all([
         supabase.from('transactions').select('*').order('date', { ascending: false }).order('created_at', { ascending: false }),
         supabase.from('categories').select('*').order('created_at', { ascending: true }),
-        supabase.from('templates').select('*').order('created_at', { ascending: true })
+        supabase.from('templates').select('*').order('created_at', { ascending: true }),
+        supabase.from('payment_methods').select('*').order('created_at', { ascending: true })
       ]);
 
       if (txRes.error) throw txRes.error;
       if (catRes.error) throw catRes.error;
       if (tplRes.error) throw tplRes.error;
+      if (pmRes.error) throw pmRes.error;
 
       this.transactions = txRes.data;
       this.categories = catRes.data;
       this.templates = tplRes.data;
+      this.paymentMethods = pmRes.data;
 
     } catch (e) {
       console.error("Error loading data", e);
@@ -202,6 +206,7 @@ class AuthState {
     this.currentUser = null;
     this.transactions = [];
     this.categories = [];
+    this.paymentMethods = [];
     this.templates = [];
     if (isBrowser) {
       document.documentElement.classList.remove('light-theme');
@@ -317,6 +322,48 @@ class AuthState {
     }
   }
 
+  // Payment Methods
+  async addPaymentMethod(name) {
+    if (!this.currentUser) return;
+    const cleanName = name.trim();
+    if (!cleanName) throw new Error('Nama metode pembayaran tidak boleh kosong');
+    
+    const exists = this.paymentMethods.find(p => p.name.toLowerCase() === cleanName.toLowerCase());
+    if (exists) throw new Error('Metode pembayaran dengan nama tersebut sudah ada');
+
+    ui.isLoading = true;
+    try {
+      const newPm = {
+        user_id: this.currentUser.id,
+        name: cleanName
+      };
+
+      const { data, error } = await supabase.from('payment_methods').insert([newPm]).select().single();
+      if (error) throw error;
+      this.paymentMethods = [...this.paymentMethods, data];
+    } catch(e) {
+      console.error(e);
+      throw new Error('Gagal menambah metode pembayaran');
+    } finally {
+      ui.isLoading = false;
+    }
+  }
+
+  async deletePaymentMethod(id) {
+    if (!this.currentUser) return;
+    ui.isLoading = true;
+    try {
+      const { error } = await supabase.from('payment_methods').delete().eq('id', id);
+      if (error) throw error;
+      this.paymentMethods = this.paymentMethods.filter(p => p.id !== id);
+    } catch(e) {
+      console.error(e);
+      throw new Error('Gagal menghapus metode pembayaran');
+    } finally {
+      ui.isLoading = false;
+    }
+  }
+
   // Templates
   async addTemplate(tplData) {
     if (!this.currentUser) return;
@@ -414,12 +461,14 @@ class AuthState {
       await Promise.all([
         supabase.from('transactions').delete().eq('user_id', this.currentUser.id),
         supabase.from('templates').delete().eq('user_id', this.currentUser.id),
-        supabase.from('categories').delete().eq('user_id', this.currentUser.id)
+        supabase.from('categories').delete().eq('user_id', this.currentUser.id),
+        supabase.from('payment_methods').delete().eq('user_id', this.currentUser.id)
       ]);
       
       this.transactions = [];
       this.templates = [];
       this.categories = [];
+      this.paymentMethods = [];
       
       // Tambahkan default categories jika perlu, tapi untuk sekarang kita biarkan kosong
       // atau biarkan user membuat baru karena Supabase tidak secara otomatis membuat default categories.

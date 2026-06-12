@@ -8,6 +8,10 @@
   let catColor = $state(CATEGORY_COLORS[0].hex);
   let errorMessage = $state('');
 
+  // --- METODE PEMBAYARAN STATES ---
+  let paymentMethodName = $state('');
+  let pmErrorMessage = $state('');
+
   async function handleAddCategory(e) {
     e.preventDefault();
     errorMessage = '';
@@ -23,21 +27,48 @@
   }
 
   function handleDeleteCategory(id, name) {
-    if (name.toLowerCase() === 'lainnya') {
-      ui.addNotification('Kategori "Lainnya" tidak dapat dihapus', 'error');
-      return;
-    }
-
     ui.askConfirmation({
       title: 'Hapus Kategori',
-      message: `Apakah Anda yakin ingin menghapus kategori "${name}"? Kategori pada transaksi yang sudah ada mungkin akan berubah menjadi "Lainnya".`,
+      message: `Apakah Anda yakin ingin menghapus kategori "${name}"?`,
       confirmText: 'Hapus',
       type: 'danger',
       onConfirm: async () => {
         try {
           await auth.deleteCategory(id);
-          ui.addNotification(`Kategori "${name}" dihapus!`, 'success');
-        } catch (err) {
+          ui.addNotification('Kategori dihapus', 'success');
+        } catch(err) {
+          ui.addNotification(err.message, 'error');
+        }
+      }
+    });
+  }
+
+  // --- PAYMENT METHOD FUNCTIONS ---
+  async function handleAddPaymentMethod(e) {
+    e.preventDefault();
+    pmErrorMessage = '';
+
+    try {
+      await auth.addPaymentMethod(paymentMethodName);
+      ui.addNotification(`Metode "${paymentMethodName}" berhasil ditambahkan!`, 'success');
+      paymentMethodName = '';
+    } catch (err) {
+      pmErrorMessage = err.message;
+      ui.addNotification(err.message, 'error');
+    }
+  }
+
+  function handleDeletePaymentMethod(id, name) {
+    ui.askConfirmation({
+      title: 'Hapus Metode Pembayaran',
+      message: `Apakah Anda yakin ingin menghapus metode "${name}"?`,
+      confirmText: 'Hapus',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await auth.deletePaymentMethod(id);
+          ui.addNotification('Metode pembayaran dihapus', 'success');
+        } catch(err) {
           ui.addNotification(err.message, 'error');
         }
       }
@@ -133,6 +164,9 @@
   <div class="data-tabs">
     <button class="tab-btn {activeTab === 'category' ? 'active' : ''}" onclick={() => activeTab = 'category'}>
       Kategori Pengeluaran
+    </button>
+    <button class="tab-btn {activeTab === 'payment_method' ? 'active' : ''}" onclick={() => activeTab = 'payment_method'}>
+      Metode Pembayaran
     </button>
     <button class="tab-btn {activeTab === 'template' ? 'active' : ''}" onclick={() => activeTab = 'template'}>
       Template Cepat
@@ -302,6 +336,85 @@
                 <p class="empty-text">Belum ada template. Buat satu untuk mempercepat pencatatan.</p>
               {/each}
             </div>
+          </div>
+        </div>
+      </div>
+    {:else if activeTab === 'payment_method'}
+      <div class="categories-layout animate-fade-in">
+        <!-- KOLOM KIRI: FORM TAMBAH PAYMENT METHOD -->
+        <div class="glass-card form-panel-card">
+          <div class="panel-header">
+            <h3>Tambah Metode Baru</h3>
+            <p class="panel-subtitle">Buat metode pembayaran baru.</p>
+          </div>
+
+          <form onsubmit={handleAddPaymentMethod} class="category-form">
+            <div class="form-group">
+              <label for="pm-name">Nama Metode</label>
+              <input 
+                type="text" 
+                id="pm-name"
+                bind:value={paymentMethodName} 
+                placeholder="Contoh: ShopeePay, Kasbon, Cek" 
+                required 
+                maxlength="30"
+              />
+            </div>
+
+            {#if pmErrorMessage}
+              <div class="error-msg">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {pmErrorMessage}
+              </div>
+            {/if}
+
+            <button type="submit" class="btn btn-primary w-full submit-btn mt-4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Tambah Metode
+            </button>
+          </form>
+        </div>
+
+        <!-- KOLOM KANAN: DAFTAR PAYMENT METHOD -->
+        <div class="glass-card list-panel-card">
+          <div class="panel-header border-b">
+            <h3>Metode Pembayaran Anda</h3>
+            <div class="badge-count">{auth.paymentMethods.length} metode</div>
+          </div>
+
+          <div class="items-list-container">
+            {#if auth.paymentMethods.length === 0}
+              <div class="empty-state">
+                <div class="empty-icon text-muted">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+                  </svg>
+                </div>
+                <h4>Belum ada metode pembayaran kustom</h4>
+                <p>Metode yang Anda buat di sini akan muncul sebagai pilihan saat Anda mencatat pengeluaran.</p>
+              </div>
+            {:else}
+              <div class="categories-grid">
+                {#each auth.paymentMethods as pm (pm.id)}
+                  <div class="category-item-card animate-scale-in">
+                    <div class="cat-info">
+                      <div class="cat-color-dot" style="background-color: var(--color-primary)"></div>
+                      <span class="cat-name">{pm.name}</span>
+                    </div>
+                    
+                    <button class="action-btn delete" title="Hapus" onclick={() => handleDeletePaymentMethod(pm.id, pm.name)}>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                {/each}
+              </div>
+            {/if}
           </div>
         </div>
       </div>
