@@ -58,14 +58,14 @@
 
     <form onsubmit={handleSubmit} class="auth-form">
       <div class="form-group">
-        <label for="email">Email</label>
+        <label for="identifier">{isLogin ? 'Email atau Username' : 'Email'}</label>
         <input 
-          type="email" 
-          id="email" 
+          type={isLogin ? "text" : "email"} 
+          id="identifier" 
           bind:value={email} 
           required 
-          placeholder="Masukkan email"
-          autocomplete="email"
+          placeholder={isLogin ? "Masukkan email atau username" : "Masukkan email"}
+          autocomplete="username"
         />
       </div>
 

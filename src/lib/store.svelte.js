@@ -166,12 +166,26 @@ class AuthState {
     }
   }
 
-  async login(email, password) {
+  async login(identifier, password) {
     ui.isLoading = true;
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      let loginEmail = identifier;
+      
+      // Jika input bukan format email, asumsikan itu username
+      if (!identifier.includes('@')) {
+        const { data, error } = await supabase.rpc('get_email_by_username', { p_username: identifier });
+        if (error || !data) {
+          throw new Error('Username tidak ditemukan atau salah');
+        }
+        loginEmail = data;
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
       if (error) throw error;
       // Session handled by onAuthStateChange
+    } catch (err) {
+      console.error(err);
+      throw new Error(err.message === 'Username tidak ditemukan atau salah' ? err.message : 'Login gagal. Periksa kembali data Anda.');
     } finally {
       ui.isLoading = false;
     }
