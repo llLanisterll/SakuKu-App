@@ -27,6 +27,16 @@ class UiState {
     type: 'primary',
     onConfirm: null
   });
+  prompt = $state({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Simpan',
+    defaultValue: '',
+    type: 'text',
+    onConfirm: null,
+    onCancel: null
+  });
 
   addNotification(message, type = 'info') {
     const id = Math.random().toString();
@@ -52,6 +62,29 @@ class UiState {
 
   closeConfirmation() {
     this.confirmation.isOpen = false;
+  }
+
+  askPrompt(options) {
+    this.prompt = {
+      isOpen: true,
+      title: options.title || 'Input',
+      message: options.message || '',
+      confirmText: options.confirmText || 'Simpan',
+      defaultValue: options.defaultValue || '',
+      type: options.type || 'text',
+      onConfirm: (val) => {
+        if (options.onConfirm) options.onConfirm(val);
+        this.closePrompt();
+      },
+      onCancel: () => {
+        if (options.onCancel) options.onCancel();
+        this.closePrompt();
+      }
+    };
+  }
+
+  closePrompt() {
+    this.prompt.isOpen = false;
   }
 }
 

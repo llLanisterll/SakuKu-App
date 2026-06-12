@@ -12,6 +12,7 @@
   import AdminUsers from './components/AdminUsers.svelte';
   import Notification from './components/Notification.svelte';
   import Confirmation from './components/Confirmation.svelte';
+  import Prompt from './components/Prompt.svelte';
   import InstallPrompt from './components/InstallPrompt.svelte';
   
   import { auth, ui } from './lib/store.svelte.js';
@@ -384,6 +385,7 @@
 <!-- Global UI Components -->
 <Notification />
 <Confirmation />
+<Prompt />
 <InstallPrompt />
 
 <style>
