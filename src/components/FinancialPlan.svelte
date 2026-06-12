@@ -47,7 +47,7 @@
     if (e.target.value === '__ADD_NEW__') {
       ui.askPrompt({
         title: 'Buat Kategori Baru',
-        message: 'Masukkan nama kategori pengeluaran baru:',
+        message: 'Masukkan nama kategori anggaran baru:',
         confirmText: 'Buat',
         onConfirm: async (val) => {
           if (!val.trim()) { budgetCategory = 'GLOBAL_MONTH'; return; }
