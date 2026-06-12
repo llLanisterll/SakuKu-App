@@ -595,7 +595,7 @@
               </div>
 
               {#if draftAmt > 0}
-                <div class="ee-budget-hint" style="margin-top: 0.5rem;">Termasuk Rp {formatRupiahShort(draftAmt)} dari draft form ini.</div>
+                <div class="ee-budget-hint" style="margin-top: 0.5rem;">Termasuk {formatRupiah(draftAmt)} dari draft form ini.</div>
               {/if}
             </div>
           {:else}
