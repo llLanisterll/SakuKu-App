@@ -448,12 +448,6 @@
                       <option value={cat.name}>{cat.name}</option>
                     {/each}
                   </select>
-                  {#if item.category && categoryBudgets[item.category]}
-                    {@const sisa = categoryBudgets[item.category] - (categoryUsage[item.category] || 0)}
-                    <div style="font-size: 0.75rem; margin-top: 0.35rem; font-weight: 600; color: {sisa < 0 ? '#ef4444' : 'var(--color-primary)'}">
-                      Sisa Anggaran: {formatRupiah(sisa)}
-                    </div>
-                  {/if}
                 </div>
 
                 <!-- Delete button (desktop) -->
@@ -569,31 +563,53 @@
     <!-- ── KOLOM KANAN: SIDEBAR ── -->
     <div class="ee-sidebar-col">
 
-      <!-- Panel 1: Budget per Kategori -->
+      <!-- Panel 1: Status Anggaran -->
       <div class="glass-card ee-panel">
         <div class="ee-panel-head">
           <h2 class="ee-panel-title">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>
-            Total Bulan Ini
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H4.5A2.25 2.25 0 002.25 12v6.75A2.25 2.25 0 004.5 21h15a2.25 2.25 0 002.25-2.25V12z" /></svg>
+            Status Anggaran
           </h2>
-          <p class="ee-panel-subtitle">Akumulasi pengeluaran per kategori bulan berjalan.</p>
+          <p class="ee-panel-subtitle">Sisa anggaran bulan ini per kategori.</p>
         </div>
 
         <div class="ee-budget-list">
           {#each expenseCats as cat (cat.id)}
-            {@const spent = categoryUsage[cat.name] || 0}
-            {@const draftAmt = draftUsage[cat.name] || 0}
-            {@const simulated = spent + draftAmt}
-            <div class="ee-budget-row {draftAmt > 0 ? 'is-draft' : ''}" title={draftAmt > 0 ? `Termasuk draft +${formatRupiah(draftAmt)}` : ''}>
-              <div class="ee-budget-cat">
-                <span class="ee-cat-dot" style="background-color: {getCategoryColor(cat.name)}"></span>
-                <span class="ee-cat-name">{cat.name}</span>
+            {@const budget = categoryBudgets[cat.name]}
+            {#if budget}
+              {@const spent = categoryUsage[cat.name] || 0}
+              {@const draftAmt = draftUsage[cat.name] || 0}
+              {@const simulated = spent + draftAmt}
+              {@const remaining = budget - simulated}
+              {@const pct = Math.min(100, Math.max(0, (simulated / budget) * 100))}
+              {@const isOver = remaining < 0}
+
+              <div class="ee-budget-card {draftAmt > 0 ? 'is-draft' : ''}">
+                <div class="ee-budget-card-head">
+                  <div class="ee-budget-cat">
+                    <span class="ee-cat-dot" style="background-color: {getCategoryColor(cat.name)}"></span>
+                    <span class="ee-cat-name">{cat.name}</span>
+                  </div>
+                  <div class="ee-budget-remaining" style="color: {isOver ? 'var(--color-danger)' : 'var(--color-primary)'};">
+                    <span class="ee-sisa-lbl">Sisa</span>
+                    <strong>{isOver ? 'Habis' : formatRupiah(remaining)}</strong>
+                  </div>
+                </div>
+                <!-- Mini Progress Bar -->
+                <div class="ee-mini-progress-bg">
+                  <div class="ee-mini-progress-bar" style="width: {pct}%; background-color: {isOver ? 'var(--color-danger)' : getCategoryColor(cat.name)};"></div>
+                </div>
+                <div class="ee-budget-meta">
+                  <span class="ee-budget-limit">Batas: {formatRupiah(budget)}</span>
+                  <span class="ee-budget-spent">Dipakai: {formatRupiah(simulated)}</span>
+                </div>
               </div>
-              <span class="ee-budget-amount">{formatRupiah(simulated)}</span>
-            </div>
-          {:else}
-            <p class="ee-empty-text">Belum ada kategori pengeluaran terdaftar.</p>
+            {/if}
           {/each}
+          
+          {#if !expenseCats.some(c => categoryBudgets[c.name])}
+            <div class="ee-empty-text">Belum ada rencana keuangan (anggaran) yang dibuat untuk pengeluaran.</div>
+          {/if}
         </div>
       </div>
 
@@ -865,6 +881,75 @@
       border: none;
       border-radius: 0;
     }
+  }
+
+  .ee-budget-card {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    background-color: var(--bg-base);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    gap: 0.75rem;
+    transition: all 0.2s;
+  }
+  .ee-budget-card.is-draft {
+    border-color: rgba(16, 185, 129, 0.4);
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+  }
+
+  .ee-budget-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .ee-budget-cat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .ee-cat-dot {
+    width: 0.625rem; height: 0.625rem; border-radius: 50%;
+  }
+  .ee-cat-name { font-size: 0.875rem; font-weight: 600; color: var(--text-foreground); }
+  
+  .ee-budget-remaining {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .ee-sisa-lbl {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-muted);
+    margin-bottom: 0.1rem;
+  }
+  .ee-budget-remaining strong {
+    font-size: 0.95rem;
+    font-weight: 800;
+  }
+
+  .ee-mini-progress-bg {
+    width: 100%;
+    height: 6px;
+    background-color: var(--border-color);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .ee-mini-progress-bar {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.3s ease;
+  }
+
+  .ee-budget-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--color-muted);
+    font-weight: 500;
   }
 
   /* Mobile-only header inside item card */

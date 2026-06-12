@@ -193,15 +193,23 @@
               {@const pct = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0}
               {@const isOver = spent > limit}
 
-              <div class="fp-budget-item" style="border-left: 4px solid {getProgressColor(pct)};">
-                <div class="fp-budget-top">
-                  <div>
-                    <h4 class="fp-budget-cat">{budget.category}</h4>
-                    <p class="fp-budget-spent">Terpakai: <strong>{formatRupiah(spent)}</strong></p>
+              <div class="fp-budget-item {isOver ? 'is-over' : ''}" style="border-top: 4px solid {getProgressColor(pct)};">
+                <div class="fp-budget-header-row">
+                  <h4 class="fp-budget-cat">{budget.category}</h4>
+                  <div class="fp-sisa-badge" style="background-color: {isOver ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'}; color: {isOver ? '#ef4444' : '#10b981'};">
+                    {isOver ? 'Anggaran Habis' : 'Sisa ' + formatRupiah(limit - spent)}
                   </div>
-                  <div class="fp-budget-limit-box">
-                    <span class="fp-budget-limit-lbl">Anggaran</span>
-                    <strong class="fp-budget-limit-val" style="color: {isOver ? '#ef4444' : 'var(--color-primary)'};">{formatRupiah(limit)}</strong>
+                </div>
+
+                <div class="fp-budget-stats-row">
+                  <div class="fp-stat-col">
+                    <span class="fp-stat-lbl">Terpakai</span>
+                    <strong class="fp-stat-val">{formatRupiah(spent)}</strong>
+                  </div>
+                  <div class="fp-stat-divider"></div>
+                  <div class="fp-stat-col">
+                    <span class="fp-stat-lbl">Batas Bulanan</span>
+                    <strong class="fp-stat-val" style="color: var(--color-muted);">{formatRupiah(limit)}</strong>
                   </div>
                 </div>
 
@@ -209,12 +217,9 @@
                   <div class="fp-progress-fill" style="width: {pct}%; background-color: {getProgressColor(pct)};"></div>
                 </div>
 
-                <div class="fp-budget-foot">
+                <div class="fp-budget-foot-clean">
                   <span style="color: {isOver ? '#ef4444' : 'var(--color-muted)'}; font-weight: 600; font-size: 0.75rem;">
                     {isOver ? '⚠ Melebihi Anggaran!' : `${Math.round(pct)}% Terpakai`}
-                  </span>
-                  <span class="fp-budget-sisa">
-                    Sisa: {isOver ? 'Habis' : formatRupiah(limit - spent)}
                   </span>
                 </div>
               </div>
@@ -501,28 +506,88 @@
 
   /* ─── BUDGET LIST ─── */
   .fp-budget-list { display: flex; flex-direction: column; gap: 1rem; }
-
+  
   .fp-budget-item {
     background: var(--bg-base);
     border: 1px solid var(--border-color);
-    border-radius: 0.875rem;
-    padding: 1rem 1.25rem;
-    transition: box-shadow 0.2s;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    transition: all 0.2s;
   }
-  .fp-budget-item:hover { box-shadow: var(--shadow-md); }
+  .fp-budget-item.is-over {
+    border-color: rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
+  }
 
-  .fp-budget-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.875rem; }
-  .fp-budget-cat { font-size: 1rem; font-weight: 700; color: var(--text-foreground); margin: 0; }
-  .fp-budget-spent { font-size: 0.8rem; color: var(--color-muted); margin: 0.25rem 0 0; }
-  .fp-budget-limit-box { text-align: right; flex-shrink: 0; }
-  .fp-budget-limit-lbl { display: block; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); margin-bottom: 0.2rem; }
-  .fp-budget-limit-val { font-size: 0.9rem; font-weight: 800; }
+  .fp-budget-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .fp-budget-cat {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-foreground);
+    margin: 0;
+  }
+  .fp-sisa-badge {
+    padding: 0.25rem 0.6rem;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
 
-  .fp-progress-track { height: 10px; background: var(--bg-glass); border-radius: 100px; overflow: hidden; }
-  .fp-progress-fill { height: 100%; border-radius: 100px; transition: width 0.8s ease; }
+  .fp-budget-stats-row {
+    display: flex;
+    align-items: center;
+    background: var(--bg-glass);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+  }
+  .fp-stat-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .fp-stat-col:last-child {
+    align-items: flex-end;
+  }
+  .fp-stat-lbl {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.2rem;
+  }
+  .fp-stat-val {
+    font-size: 0.95rem;
+    font-weight: 800;
+  }
+  .fp-stat-divider {
+    width: 1px;
+    height: 30px;
+    background: var(--border-color);
+    margin: 0 1rem;
+  }
 
-  .fp-budget-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; }
-  .fp-budget-sisa { font-size: 0.75rem; font-weight: 600; color: var(--color-muted); }
+  .fp-progress-track {
+    width: 100%; height: 8px;
+    background: var(--border-color);
+    border-radius: 100px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+  .fp-progress-fill {
+    height: 100%; border-radius: 100px;
+    transition: width 0.4s ease;
+  }
+
+  .fp-budget-foot-clean {
+    display: flex; justify-content: space-between; align-items: center;
+  }
 
   /* ─── GOALS GRID ─── */
   .fp-goals-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
