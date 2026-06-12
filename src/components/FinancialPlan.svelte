@@ -43,8 +43,8 @@
     } catch (err) { ui.addNotification(err.message, 'error'); }
   }
 
-  function handleCategoryChange(e) {
-    if (e.target.value === '__ADD_NEW__') {
+  $effect(() => {
+    if (budgetCategory === '__ADD_NEW__') {
       ui.askPrompt({
         title: 'Buat Kategori Baru',
         message: 'Masukkan nama kategori anggaran baru:',
@@ -64,17 +64,17 @@
         },
         onCancel: () => { budgetCategory = 'GLOBAL_MONTH'; }
       });
-    } else if (e.target.value !== 'GLOBAL_MONTH') {
-      const existing = auth.budgets.find(b => b.category === e.target.value);
+    } else if (budgetCategory !== 'GLOBAL_MONTH') {
+      const existing = auth.budgets.find(b => b.category === budgetCategory);
       if (existing) {
-        budgetAmount = existing.amount;
+        budgetAmount = String(existing.amount);
       } else {
         budgetAmount = '';
       }
     } else {
       budgetAmount = '';
     }
-  }
+  });
 
   // --- SAVING GOALS ---
   let goalName = $state('');
@@ -185,7 +185,7 @@
         <form onsubmit={handleSaveBudget} class="fp-form">
           <div class="fp-field">
             <label class="fp-label" for="b-cat">Kategori Anggaran</label>
-            <select id="b-cat" bind:value={budgetCategory} onchange={handleCategoryChange} class="fp-input" required>
+            <select id="b-cat" bind:value={budgetCategory} class="fp-input" required>
               <option value="GLOBAL_MONTH">🌍 Anggaran Total Bulan Ini</option>
               <option disabled>──────────</option>
               {#each expenseCats as cat}
