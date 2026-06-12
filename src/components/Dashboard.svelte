@@ -404,7 +404,7 @@
               <div class="fp-mini-item">
                 <div class="fp-mini-top">
                   <span class="fp-mini-name">Total Pengeluaran</span>
-                  <span class="fp-mini-val" style="color: {spent > limit ? 'var(--color-danger)' : 'var(--text-foreground)'}">{formatRupiahShort(spent)} / {formatRupiahShort(limit)}</span>
+                  <span class="fp-mini-val" style="color: {spent > limit ? 'var(--color-danger)' : 'var(--text-foreground)'}">{formatRupiah(spent)} / {formatRupiah(limit)}</span>
                 </div>
                 <div class="fp-mini-track">
                   <div class="fp-mini-fill" style="width: {pct}%; background: {pct >= 100 ? 'var(--color-danger)' : pct > 80 ? 'var(--color-warning)' : 'var(--color-primary)'}"></div>
@@ -427,7 +427,7 @@
                 <div class="fp-mini-item">
                   <div class="fp-mini-top">
                     <span class="fp-mini-name">{goal.name}</span>
-                    <span class="fp-mini-val" style="color: {pct >= 100 ? 'var(--color-success)' : 'var(--text-foreground)'}">{formatRupiahShort(goal.current)} / {formatRupiahShort(goal.target)}</span>
+                    <span class="fp-mini-val" style="color: {pct >= 100 ? 'var(--color-success)' : 'var(--text-foreground)'}">{formatRupiah(goal.current)} / {formatRupiah(goal.target)}</span>
                   </div>
                   <div class="fp-mini-track">
                     <div class="fp-mini-fill" style="width: {pct}%; background: {pct >= 100 ? 'var(--color-success)' : 'var(--color-primary)'}"></div>
