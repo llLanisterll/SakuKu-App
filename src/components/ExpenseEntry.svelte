@@ -48,31 +48,15 @@
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
 
-  const categoryUsage = $derived.by(() => {
-    const usage = {};
-    auth.transactions
-      .filter(t => t.type === 'expense' && t.date?.startsWith(thisMonth))
-      .forEach(t => {
-        const cat = t.category || 'Lainnya';
-        usage[cat] = (usage[cat] || 0) + Number(t.amount);
-      });
-    return usage;
+  const globalBudget = $derived.by(() => {
+    const b = (auth.budgets || []).find(b => b.category === 'GLOBAL_MONTH');
+    return b ? Number(b.amount) : 0;
   });
 
-  const categoryBudgets = $derived.by(() => {
-    const bMap = {};
-    (auth.budgets || []).forEach(b => bMap[b.category] = b.amount);
-    return bMap;
-  });
-
-  const draftUsage = $derived.by(() => {
-    const draft = {};
-    items.forEach(item => {
-      if (item.category && item.amount) {
-        draft[item.category] = (draft[item.category] || 0) + Number(item.amount);
-      }
-    });
-    return draft;
+  const globalUsage = $derived.by(() => {
+    return auth.transactions
+      .filter(t => (t.type === 'expense' || !t.type) && t.date?.startsWith(thisMonth))
+      .reduce((sum, t) => sum + Number(t.amount), 0);
   });
 
   const totalDraftAmount = $derived(items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0));
@@ -568,47 +552,45 @@
         <div class="ee-panel-head">
           <h2 class="ee-panel-title">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H4.5A2.25 2.25 0 002.25 12v6.75A2.25 2.25 0 004.5 21h15a2.25 2.25 0 002.25-2.25V12z" /></svg>
-            Status Anggaran
+            Status Anggaran Bulanan
           </h2>
-          <p class="ee-panel-subtitle">Sisa anggaran bulan ini per kategori.</p>
+          <p class="ee-panel-subtitle">Sisa anggaran global untuk bulan ini.</p>
         </div>
 
         <div class="ee-budget-list">
-          {#each expenseCats as cat (cat.id)}
-            {@const budget = categoryBudgets[cat.name]}
-            {#if budget}
-              {@const spent = categoryUsage[cat.name] || 0}
-              {@const draftAmt = draftUsage[cat.name] || 0}
-              {@const simulated = spent + draftAmt}
-              {@const remaining = budget - simulated}
-              {@const pct = Math.min(100, Math.max(0, (simulated / budget) * 100))}
-              {@const isOver = remaining < 0}
+          {#if globalBudget > 0}
+            {@const spent = globalUsage}
+            {@const draftAmt = totalDraftAmount}
+            {@const simulated = spent + draftAmt}
+            {@const remaining = globalBudget - simulated}
+            {@const pct = Math.min(100, Math.max(0, (simulated / globalBudget) * 100))}
+            {@const isOver = remaining < 0}
 
-              <div class="ee-budget-card {draftAmt > 0 ? 'is-draft' : ''}">
-                <div class="ee-budget-card-head">
-                  <div class="ee-budget-cat">
-                    <span class="ee-cat-dot" style="background-color: {getCategoryColor(cat.name)}"></span>
-                    <span class="ee-cat-name">{cat.name}</span>
-                  </div>
-                  <div class="ee-budget-remaining" style="color: {isOver ? 'var(--color-danger)' : 'var(--color-primary)'};">
-                    <span class="ee-sisa-lbl">Sisa</span>
-                    <strong>{isOver ? 'Habis' : formatRupiah(remaining)}</strong>
-                  </div>
+            <div class="ee-budget-card {draftAmt > 0 ? 'is-draft' : ''}">
+              <div class="ee-budget-card-head">
+                <div class="ee-budget-cat">
+                  <span class="ee-cat-dot" style="background-color: var(--color-primary)"></span>
+                  <span class="ee-cat-name">Total Pengeluaran</span>
                 </div>
-                <!-- Mini Progress Bar -->
-                <div class="ee-mini-progress-bg">
-                  <div class="ee-mini-progress-bar" style="width: {pct}%; background-color: {isOver ? 'var(--color-danger)' : getCategoryColor(cat.name)};"></div>
-                </div>
-                <div class="ee-budget-meta">
-                  <span class="ee-budget-limit">Batas: {formatRupiah(budget)}</span>
-                  <span class="ee-budget-spent">Dipakai: {formatRupiah(simulated)}</span>
+                <div class="ee-budget-remaining" style="color: {isOver ? 'var(--color-danger)' : 'var(--color-primary)'};">
+                  <span class="ee-sisa-lbl">Sisa</span>
+                  <strong>{isOver ? 'Habis' : formatRupiah(remaining)}</strong>
                 </div>
               </div>
-            {/if}
-          {/each}
-          
-          {#if !expenseCats.some(c => categoryBudgets[c.name])}
-            <div class="ee-empty-text">Belum ada rencana keuangan (anggaran) yang dibuat untuk pengeluaran.</div>
+              <!-- Mini Progress Bar -->
+              <div class="ee-mini-progress-bg">
+                <div class="ee-mini-progress-bar" style="width: {pct}%; background-color: {isOver ? 'var(--color-danger)' : 'var(--color-primary)'};"></div>
+              </div>
+              {#if draftAmt > 0}
+                <div class="ee-budget-hint">Termasuk Rp {formatRupiahShort(draftAmt)} dari form ini.</div>
+              {/if}
+            </div>
+          {:else}
+            <div class="ee-empty-budget">
+              <span class="ee-empty-emoji">📉</span>
+              <p>Anggaran bulanan belum diatur.</p>
+              <button class="btn-link-sm" onclick={() => ui.currentTab = 'planning'}>Atur Sekarang</button>
+            </div>
           {/if}
         </div>
       </div>

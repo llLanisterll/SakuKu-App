@@ -88,16 +88,6 @@
       .reduce((s, t) => s + Number(t.amount), 0)
   );
 
-  // ── Category Usage ──
-  const currentMonthExpenses = $derived.by(() => {
-    const usage = {};
-    thisMonthTransactions.filter(t => t.type === 'expense' || !t.type).forEach(t => {
-      const c = t.category || 'Lainnya';
-      usage[c] = (usage[c] || 0) + Number(t.amount);
-    });
-    return usage;
-  });
-
   // ── Category summary for donut ──
   const categorySummary = $derived.by(() => {
     const summary = {};
@@ -403,27 +393,24 @@
         <!-- Budgets -->
         <div class="fp-summary-col">
           <h4 class="fp-summary-col-title">Anggaran Bulanan</h4>
-          {#if auth.budgets.length === 0}
+          {#if !auth.budgets.find(b => b.category === 'GLOBAL_MONTH')}
             <p class="empty-text">Belum ada anggaran terdaftar.</p>
           {:else}
+            {@const budget = auth.budgets.find(b => b.category === 'GLOBAL_MONTH')}
+            {@const spent = totalMonthExpense}
+            {@const limit = Number(budget.amount)}
+            {@const pct = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0}
             <div class="fp-summary-list">
-              {#each auth.budgets.slice(0, 3) as budget}
-                {@const spent = currentMonthExpenses[budget.category] || 0}
-                {@const limit = Number(budget.amount)}
-                {@const pct = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0}
-                <div class="fp-mini-item">
-                  <div class="fp-mini-top">
-                    <span class="fp-mini-name">{budget.category}</span>
-                    <span class="fp-mini-val" style="color: {spent > limit ? 'var(--color-danger)' : 'var(--text-foreground)'}">{formatRupiahShort(spent)} / {formatRupiahShort(limit)}</span>
-                  </div>
-                  <div class="fp-mini-track">
-                    <div class="fp-mini-fill" style="width: {pct}%; background: {pct >= 100 ? 'var(--color-danger)' : pct > 80 ? 'var(--color-warning)' : 'var(--color-primary)'}"></div>
-                  </div>
+              <div class="fp-mini-item">
+                <div class="fp-mini-top">
+                  <span class="fp-mini-name">Total Pengeluaran</span>
+                  <span class="fp-mini-val" style="color: {spent > limit ? 'var(--color-danger)' : 'var(--text-foreground)'}">{formatRupiahShort(spent)} / {formatRupiahShort(limit)}</span>
                 </div>
-              {/each}
-              {#if auth.budgets.length > 3}
-                <button class="btn-link" style="align-self: flex-start; margin-top:0.5rem;" onclick={() => ui.currentTab = 'planning'}>Lihat {auth.budgets.length - 3} lainnya →</button>
-              {/if}
+                <div class="fp-mini-track">
+                  <div class="fp-mini-fill" style="width: {pct}%; background: {pct >= 100 ? 'var(--color-danger)' : pct > 80 ? 'var(--color-warning)' : 'var(--color-primary)'}"></div>
+                </div>
+              </div>
+              <button class="btn-link" style="align-self: flex-start; margin-top:0.5rem;" onclick={() => ui.currentTab = 'planning'}>Kelola Anggaran →</button>
             </div>
           {/if}
         </div>

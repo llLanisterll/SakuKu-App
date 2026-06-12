@@ -5,35 +5,33 @@
   let activeTab = $state('budget');
 
   // --- BUDGET ---
-  let budgetCat = $state('');
   let budgetAmount = $state('');
-  const expenseCats = $derived(auth.categories.filter(c => c.type === 'expense'));
 
-  const currentMonthExpenses = $derived.by(() => {
+  const totalCurrentMonthExpenses = $derived.by(() => {
     const now = new Date();
     const month = now.getMonth();
     const year = now.getFullYear();
-    const expenses = {};
-    auth.transactions
+    return auth.transactions
       .filter(t => t.type === 'expense' || !t.type)
-      .forEach(t => {
+      .reduce((sum, t) => {
         const d = new Date(t.date);
         if (d.getMonth() === month && d.getFullYear() === year) {
-          expenses[t.category] = (expenses[t.category] || 0) + Number(t.amount);
+          return sum + Number(t.amount);
         }
-      });
-    return expenses;
+        return sum;
+      }, 0);
   });
+  
+  const globalBudget = $derived(auth.budgets.find(b => b.category === 'GLOBAL_MONTH'));
 
   async function handleSaveBudget(e) {
     if (e) e.preventDefault();
-    if (!budgetCat) { ui.addNotification('Pilih kategori terlebih dahulu', 'error'); return; }
     const amountNum = Number(String(budgetAmount).replace(/[^0-9]/g, ''));
     if (isNaN(amountNum) || amountNum <= 0) { ui.addNotification('Nominal tidak valid', 'error'); return; }
     try {
-      await auth.saveBudget(budgetCat, amountNum);
-      ui.addNotification('Anggaran berhasil disimpan', 'success');
-      budgetCat = ''; budgetAmount = '';
+      await auth.saveBudget('GLOBAL_MONTH', amountNum);
+      ui.addNotification('Anggaran bulanan berhasil disimpan', 'success');
+      budgetAmount = '';
     } catch (err) { ui.addNotification(err.message, 'error'); }
   }
 
@@ -139,21 +137,11 @@
       <!-- Form -->
       <div class="glass-card fp-form-card">
         <div class="fp-card-header">
-          <h3 class="fp-card-title">Atur Anggaran</h3>
-          <p class="fp-card-subtitle">Batas maksimal pengeluaran per kategori setiap bulan.</p>
+          <h3 class="fp-card-title">Tetapkan Anggaran Bulanan</h3>
+          <p class="fp-card-subtitle">Batas maksimal total pengeluaran untuk seluruh bulan ini.</p>
         </div>
 
         <form onsubmit={handleSaveBudget} class="fp-form">
-          <div class="fp-field">
-            <label class="fp-label" for="b-cat">Pilih Kategori</label>
-            <select id="b-cat" bind:value={budgetCat} required class="fp-select">
-              <option value="" disabled selected>-- Pilih Kategori --</option>
-              {#each expenseCats as cat}
-                <option value={cat.name}>{cat.name}</option>
-              {/each}
-            </select>
-          </div>
-
           <div class="fp-field">
             <label class="fp-label" for="b-amt">Batas Maksimal (Rp)</label>
             <div class="fp-input-wrap">
@@ -162,7 +150,7 @@
                 type="text" inputmode="numeric" id="b-amt" min="0"
                 value={budgetAmount ? Number(String(budgetAmount).replace(/[^0-9]/g, '')).toLocaleString('id-ID') : ''}
                 oninput={(e) => { budgetAmount = e.target.value.replace(/[^0-9]/g, ''); }}
-                placeholder="0"
+                placeholder={globalBudget ? formatRupiah(globalBudget.amount).replace('Rp', '').trim() : "0"}
                 required class="fp-input fp-input-right"
               />
             </div>
@@ -175,55 +163,53 @@
       <!-- List -->
       <div class="glass-card fp-list-card">
         <div class="fp-card-header">
-          <h3 class="fp-card-title">Pantauan Bulan Ini</h3>
-          <p class="fp-card-subtitle">Progress pengeluaran vs anggaran yang telah Anda tetapkan.</p>
+          <h3 class="fp-card-title">Status Anggaran Global</h3>
+          <p class="fp-card-subtitle">Pantau kesehatan finansial Anda secara keseluruhan.</p>
         </div>
 
-        {#if auth.budgets.length === 0}
+        {#if !globalBudget}
           <div class="fp-empty">
-            <span class="fp-empty-icon">📋</span>
-            <p>Belum ada anggaran yang diatur.</p>
-            <p class="fp-empty-sub">Gunakan form di sebelah kiri untuk memulai.</p>
+            <span class="fp-empty-icon">📊</span>
+            <p>Belum ada batas anggaran bulanan.</p>
+            <p class="fp-empty-sub">Gunakan form di sebelah kiri untuk menetapkan batasan pengeluaran bulanan Anda.</p>
           </div>
         {:else}
-          <div class="fp-budget-list">
-            {#each auth.budgets as budget}
-              {@const spent = currentMonthExpenses[budget.category] || 0}
-              {@const limit = Number(budget.amount)}
-              {@const pct = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0}
-              {@const isOver = spent > limit}
+            {@const spent = totalCurrentMonthExpenses}
+            {@const limit = Number(globalBudget.amount)}
+            {@const pct = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0}
+            {@const isOver = spent > limit}
+          <div class="fp-budget-list" style="margin-top: 1rem;">
 
-              <div class="fp-budget-item {isOver ? 'is-over' : ''}" style="border-top: 4px solid {getProgressColor(pct)};">
+              <div class="fp-budget-item {isOver ? 'is-over' : ''}" style="border-top: 4px solid {getProgressColor(pct)}; padding: 1.5rem;">
                 <div class="fp-budget-header-row">
-                  <h4 class="fp-budget-cat">{budget.category}</h4>
-                  <div class="fp-sisa-badge" style="background-color: {isOver ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'}; color: {isOver ? '#ef4444' : '#10b981'};">
+                  <h4 class="fp-budget-cat" style="font-size: 1.2rem;">Anggaran Bulan Ini</h4>
+                  <div class="fp-sisa-badge" style="background-color: {isOver ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'}; color: {isOver ? '#ef4444' : '#10b981'}; font-size: 0.95rem; padding: 0.5rem 1rem;">
                     {isOver ? 'Anggaran Habis' : 'Sisa ' + formatRupiah(limit - spent)}
                   </div>
                 </div>
 
-                <div class="fp-budget-stats-row">
+                <div class="fp-budget-stats-row" style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
                   <div class="fp-stat-col">
-                    <span class="fp-stat-lbl">Terpakai</span>
-                    <strong class="fp-stat-val">{formatRupiah(spent)}</strong>
+                    <span class="fp-stat-lbl" style="font-size: 0.95rem;">Total Terpakai</span>
+                    <strong class="fp-stat-val" style="font-size: 1.5rem;">{formatRupiah(spent)}</strong>
                   </div>
-                  <div class="fp-stat-divider"></div>
+                  <div class="fp-stat-divider" style="height: 3rem;"></div>
                   <div class="fp-stat-col">
-                    <span class="fp-stat-lbl">Batas Bulanan</span>
-                    <strong class="fp-stat-val" style="color: var(--color-muted);">{formatRupiah(limit)}</strong>
+                    <span class="fp-stat-lbl" style="font-size: 0.95rem;">Batas Bulanan</span>
+                    <strong class="fp-stat-val" style="color: var(--color-muted); font-size: 1.5rem;">{formatRupiah(limit)}</strong>
                   </div>
                 </div>
 
-                <div class="fp-progress-track">
+                <div class="fp-progress-track" style="height: 12px;">
                   <div class="fp-progress-fill" style="width: {pct}%; background-color: {getProgressColor(pct)};"></div>
                 </div>
 
-                <div class="fp-budget-foot-clean">
-                  <span style="color: {isOver ? '#ef4444' : 'var(--color-muted)'}; font-weight: 600; font-size: 0.75rem;">
+                <div class="fp-budget-foot-clean" style="margin-top: 1rem;">
+                  <span style="color: {isOver ? '#ef4444' : 'var(--color-muted)'}; font-weight: 700; font-size: 0.9rem;">
                     {isOver ? '⚠ Melebihi Anggaran!' : `${Math.round(pct)}% Terpakai`}
                   </span>
                 </div>
               </div>
-            {/each}
           </div>
         {/if}
       </div>
