@@ -51,8 +51,14 @@
   );
 
   const totalPeriod = $derived(
-    periodTxs.reduce((sum, t) => sum + Number(t.amount), 0)
+    periodTxs.filter(t => t.type !== 'income').reduce((sum, t) => sum + Number(t.amount), 0)
   );
+
+  const totalIncomePeriod = $derived(
+    periodTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0)
+  );
+
+  const netPeriod = $derived(totalIncomePeriod - totalPeriod);
 
   // Category breakdown
   const categoryBreakdown = $derived.by(() => {
@@ -105,6 +111,7 @@
   // Summary stats
   const avgPerDay = $derived(totalPeriod > 0 ? totalPeriod / (reportPeriod * 30) : 0);
   const avgPerMonth = $derived(totalPeriod > 0 ? totalPeriod / reportPeriod : 0);
+  const avgIncomePerMonth = $derived(totalIncomePeriod > 0 ? totalIncomePeriod / reportPeriod : 0);
 
   function getCategoryColor(name) {
     const cat = auth.categories.find(c => c.name === name);
@@ -153,14 +160,34 @@
   <!-- Summary Stats Row -->
   <div class="summary-row">
     <div class="sum-card glass-card">
+      <div class="sum-icon" style="background:rgba(16,185,129,0.12); color:#10b981;">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+      </div>
+      <div class="sum-info">
+        <span class="sum-label">Pemasukan {reportPeriod} Bulan</span>
+        <span class="sum-val" style="color:#10b981;">{formatRupiah(totalIncomePeriod)}</span>
+      </div>
+    </div>
+
+    <div class="sum-card glass-card">
       <div class="sum-icon sum-total">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
         </svg>
       </div>
       <div class="sum-info">
-        <span class="sum-label">Total {reportPeriod} Bulan</span>
+        <span class="sum-label">Pengeluaran {reportPeriod} Bulan</span>
         <span class="sum-val danger">{formatRupiah(totalPeriod)}</span>
+      </div>
+    </div>
+
+    <div class="sum-card glass-card">
+      <div class="sum-icon" style="background: rgba(99,102,241,0.12); color:var(--color-primary);">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0 0 12 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52 2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 0 1-2.031.352 5.988 5.988 0 0 1-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971Zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0 2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 0 1-2.031.352 5.989 5.989 0 0 1-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971Z" /></svg>
+      </div>
+      <div class="sum-info">
+        <span class="sum-label">Saldo Bersih {reportPeriod} Bulan</span>
+        <span class="sum-val" style="color:{netPeriod >= 0 ? 'var(--color-primary)' : '#ef4444'}">{netPeriod >= 0 ? '+' : ''}{formatRupiah(netPeriod)}</span>
       </div>
     </div>
 
@@ -171,7 +198,7 @@
         </svg>
       </div>
       <div class="sum-info">
-        <span class="sum-label">Rata-rata per Bulan</span>
+        <span class="sum-label">Rata-rata Keluar/Bulan</span>
         <span class="sum-val primary">{formatRupiah(avgPerMonth)}</span>
       </div>
     </div>
@@ -200,6 +227,7 @@
       </div>
     </div>
   </div>
+
 
   {#if periodTxs.length === 0}
     <!-- Empty State -->

@@ -3,6 +3,7 @@
 
   // State Filter
   let searchQuery = $state('');
+  let filterType = $state('all'); // 'all' | 'expense' | 'income'
   let filterPeriod = $state('all'); // 'all' | 'today' | 'weekly' | 'monthly' | 'yearly'
   let filterCategory = $state('all');
   let filterPayment = $state('all');
@@ -74,6 +75,8 @@
   const filteredTransactions = $derived.by(() => {
     return auth.transactions
       .filter(t => {
+        if (filterType === 'expense' && t.type === 'income') return false;
+        if (filterType === 'income' && t.type !== 'income') return false;
         if (searchQuery.trim() && !t.description.toLowerCase().includes(searchQuery.toLowerCase())) {
           return false;
         }
@@ -105,8 +108,12 @@
   });
 
   const filteredExpenseTotal = $derived(
-    filteredTransactions.reduce((sum, t) => sum + t.amount, 0)
+    filteredTransactions.filter(t => t.type !== 'income').reduce((sum, t) => sum + Number(t.amount), 0)
   );
+  const filteredIncomeTotal = $derived(
+    filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0)
+  );
+  const filteredNetBalance = $derived(filteredIncomeTotal - filteredExpenseTotal);
 
   function getCategoryColor(catName) {
     const cat = auth.categories.find(c => c.name === catName);
@@ -128,6 +135,7 @@
 
   function handleResetFilters() {
     searchQuery = '';
+    filterType = 'all';
     filterPeriod = 'all';
     filterCategory = 'all';
     filterPayment = 'all';
@@ -143,20 +151,32 @@
       <span class="page-header-icon">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" /></svg>
       </span>
-      Riwayat Pengeluaran
+      Riwayat Transaksi
     </h1>
-    <p class="page-subtitle">Kelola dan pantau seluruh catatan belanja pribadi Anda.</p>
+    <p class="page-subtitle">Kelola dan pantau seluruh catatan keuangan — pengeluaran maupun pemasukan.</p>
   </div>
 
   <!-- Top Summary Bar -->
   <div class="summary-top-bar glass-card">
-    <div class="summary-content">
-      <div class="summary-info">
-        <span class="summary-label">Total Pengeluaran Terfilter</span>
-        <h2 class="summary-value">{formatRupiah(filteredExpenseTotal)}</h2>
+    <div class="summary-grid">
+      <div class="summary-stat">
+        <span class="summary-stat-lbl">Pemasukan</span>
+        <strong class="summary-stat-val" style="color:#10b981;">+{formatRupiah(filteredIncomeTotal)}</strong>
       </div>
-      <div class="summary-meta">
-        <span class="count-badge">{filteredTransactions.length} Transaksi</span>
+      <div class="summary-divider"></div>
+      <div class="summary-stat">
+        <span class="summary-stat-lbl">Pengeluaran</span>
+        <strong class="summary-stat-val" style="color:#ef4444;">-{formatRupiah(filteredExpenseTotal)}</strong>
+      </div>
+      <div class="summary-divider"></div>
+      <div class="summary-stat">
+        <span class="summary-stat-lbl">Selisih</span>
+        <strong class="summary-stat-val" style="color:{filteredNetBalance >= 0 ? 'var(--color-primary)' : '#ef4444'};">{filteredNetBalance >= 0 ? '+' : ''}{formatRupiah(filteredNetBalance)}</strong>
+      </div>
+      <div class="summary-divider"></div>
+      <div class="summary-stat">
+        <span class="summary-stat-lbl">Total Catatan</span>
+        <strong class="summary-stat-val">{filteredTransactions.length}</strong>
       </div>
     </div>
   </div>
@@ -164,6 +184,21 @@
   <!-- Controls Panel -->
   <div class="controls-panel glass-card">
     
+    <!-- Row 0: Type Tabs -->
+    <div class="row-type-tabs">
+      <button class="type-tab {filterType === 'all' ? 'type-active' : ''}" onclick={() => { filterType = 'all'; filterCategory = 'all'; }}>
+        Semua Transaksi
+      </button>
+      <button class="type-tab {filterType === 'income' ? 'type-active income-active' : ''}" onclick={() => { filterType = 'income'; filterCategory = 'all'; }}>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+        Pemasukan
+      </button>
+      <button class="type-tab {filterType === 'expense' ? 'type-active expense-active' : ''}" onclick={() => { filterType = 'expense'; filterCategory = 'all'; }}>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14" /></svg>
+        Pengeluaran
+      </button>
+    </div>
+
     <!-- Row 1: Search & Reset -->
     <div class="row-search-reset">
       <div class="search-input-inner">
@@ -172,7 +207,7 @@
         </svg>
         <input 
           type="text" 
-          placeholder="Cari deskripsi pengeluaran..." 
+          placeholder="Cari deskripsi transaksi..." 
           bind:value={searchQuery}
         />
       </div>
@@ -245,17 +280,24 @@
 
         <div class="transactions-stack">
           {#each transactions as tx (tx.id)}
+            {@const isIncome = tx.type === 'income'}
+            {@const txColor = isIncome ? '#10b981' : getCategoryColor(tx.category)}
             <div class="transaction-item-card">
               <div class="tx-main-info">
-                <div class="tx-icon-box" style="background-color: {getCategoryColor(tx.category)}20; color: {getCategoryColor(tx.category)}">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75-3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5h15a2.25 2.25 0 002.25-2.25V14.25" />
-                  </svg>
+                <div class="tx-icon-box" style="background-color: {txColor}20; color: {txColor}">
+                  {#if isIncome}
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                  {:else}
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75-3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5h15a2.25 2.25 0 002.25-2.25V14.25" />
+                    </svg>
+                  {/if}
                 </div>
                 <div class="tx-details">
                   <h4 class="tx-desc">{tx.description}</h4>
                   <div class="tx-meta-row">
-                    <span class="tx-cat-tag" style="color: {getCategoryColor(tx.category)}">{tx.category}</span>
+                    <span class="tx-type-badge" style="background:{txColor}18; color:{txColor}">{isIncome ? '↑ Masuk' : '↓ Keluar'}</span>
+                    <span class="tx-cat-tag" style="color: {txColor}">{tx.category}</span>
                     <span class="tx-meta-dot"></span>
                     <span class="tx-method">{tx.payment_method}</span>
                     {#if tx.quantity > 1}
@@ -266,7 +308,7 @@
                 </div>
               </div>
               <div class="tx-action-side">
-                <div class="tx-amount text-danger">-{formatRupiah(tx.amount)}</div>
+                <div class="tx-amount" style="color:{isIncome ? '#10b981' : '#ef4444'}">{isIncome ? '+' : '-'}{formatRupiah(tx.amount)}</div>
                 <button class="btn-delete-tx" onclick={() => handleDeleteTx(tx.id, tx.description)} title="Hapus">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
@@ -289,8 +331,6 @@
 </div>
 
 <style>
-  /* ── Header – Unified ── */
-
   .history-page-wrapper {
     max-width: 900px;
     margin: 0 auto;
@@ -301,15 +341,59 @@
 
   /* Summary Top Bar */
   .summary-top-bar {
-    padding: 1.25rem 1.5rem;
-    background: linear-gradient(135deg, var(--bg-card) 0%, rgba(99, 102, 241, 0.05) 100%);
-    border-left: 4px solid var(--color-primary);
+    padding: 1rem 1.5rem;
+  }
+  .summary-grid {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .summary-stat {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 0.5rem 1.25rem;
+    min-width: 0;
+  }
+  .summary-stat:first-child { padding-left: 0; }
+  .summary-stat-lbl {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--color-muted);
+  }
+  .summary-stat-val {
+    font-size: 1rem; font-weight: 800; margin-top: 0.2rem; white-space: nowrap;
+  }
+  .summary-divider {
+    width: 1px; height: 40px; background: var(--border-color); flex-shrink: 0;
   }
 
-  .summary-content {
+  /* Type Filter Tabs */
+  .row-type-tabs {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .type-tab {
+    display: flex; align-items: center; gap: 0.375rem;
+    padding: 0.5rem 1.25rem;
+    background: var(--bg-base);
+    border: 1px solid var(--border-color);
+    border-radius: 100px;
+    font-size: 0.875rem; font-weight: 600;
+    color: var(--color-muted);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .type-tab svg { width: 14px; height: 14px; }
+  .type-tab:hover { color: var(--text-foreground); border-color: var(--color-primary); }
+  .type-active { color: var(--color-primary) !important; border-color: var(--color-primary) !important; background: rgba(99,102,241,0.08) !important; }
+  .income-active { color: #10b981 !important; border-color: #10b981 !important; background: rgba(16,185,129,0.08) !important; }
+  .expense-active { color: #ef4444 !important; border-color: #ef4444 !important; background: rgba(239,68,68,0.08) !important; }
+
+  /* tx type badge */
+  .tx-type-badge {
+    font-size: 0.6rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.05em; padding: 0.1rem 0.4rem;
+    border-radius: 100px; flex-shrink: 0;
   }
 
   .summary-info {
