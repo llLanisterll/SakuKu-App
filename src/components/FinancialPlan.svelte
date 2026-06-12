@@ -111,12 +111,24 @@
   </div>
 
   <!-- Tabs -->
-  <div class="data-tabs">
-    <button class="tab-btn {activeTab === 'budget' ? 'active' : ''}" onclick={() => activeTab = 'budget'}>
-      📊 Anggaran Bulanan
+  <div class="fp-tabs">
+    <button
+      class="fp-tab-btn {activeTab === 'budget' ? 'fp-tab-active' : ''}"
+      onclick={() => activeTab = 'budget'}
+    >
+      <span class="fp-tab-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>
+      </span>
+      Anggaran Bulanan
     </button>
-    <button class="tab-btn {activeTab === 'saving' ? 'active' : ''}" onclick={() => activeTab = 'saving'}>
-      🎯 Tujuan Tabungan
+    <button
+      class="fp-tab-btn {activeTab === 'saving' ? 'fp-tab-active' : ''}"
+      onclick={() => activeTab = 'saving'}
+    >
+      <span class="fp-tab-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>
+      </span>
+      Tujuan Tabungan
     </button>
   </div>
 
@@ -366,6 +378,57 @@
 <style>
   /* ─── PAGE ─── */
   .fp-page { width: 100%; }
+
+  /* ─── SEGMENTED TAB CONTROL ─── */
+  .fp-tabs {
+    display: inline-flex;
+    align-items: center;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    padding: 0.3rem;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .fp-tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    background: transparent;
+    border: none;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .fp-tab-btn:hover:not(.fp-tab-active) {
+    color: var(--text-foreground);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .fp-tab-active {
+    background: var(--color-primary) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+  }
+
+  .fp-tab-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .fp-tab-icon svg { width: 16px; height: 16px; }
 
   /* ─── LAYOUT 2-COL ─── */
   .fp-layout {
