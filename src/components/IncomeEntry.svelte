@@ -126,8 +126,9 @@
                     <span class="ee-input-prefix" style="color: var(--color-success);">Rp</span>
                     <input
                       id="amount-{idx}"
-                      type="number"
-                      bind:value={item.amount}
+                      type="text" inputmode="numeric"
+                      value={item.amount ? Number(String(item.amount).replace(/[^0-9]/g, '')).toLocaleString('id-ID') : ''}
+                      oninput={(e) => { item.amount = e.target.value.replace(/[^0-9]/g, ''); }}
                       min="1"
                       placeholder="0"
                       required

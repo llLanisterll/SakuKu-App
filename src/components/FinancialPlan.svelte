@@ -159,8 +159,9 @@
             <div class="fp-input-wrap">
               <span class="fp-input-prefix">Rp</span>
               <input
-                type="number" id="b-amt" min="0"
-                bind:value={budgetAmount}
+                type="text" inputmode="numeric" id="b-amt" min="0"
+                value={budgetAmount ? Number(String(budgetAmount).replace(/[^0-9]/g, '')).toLocaleString('id-ID') : ''}
+                oninput={(e) => { budgetAmount = e.target.value.replace(/[^0-9]/g, ''); }}
                 placeholder="0"
                 required class="fp-input fp-input-right"
               />
@@ -245,7 +246,12 @@
             <label class="fp-label" for="s-target">Nominal Target (Rp)</label>
             <div class="fp-input-wrap">
               <span class="fp-input-prefix">Rp</span>
-              <input type="number" id="s-target" min="1" bind:value={goalTarget} placeholder="0" required class="fp-input fp-input-right" />
+              <input 
+                type="text" inputmode="numeric" id="s-target" min="1" 
+                value={goalTarget ? Number(String(goalTarget).replace(/[^0-9]/g, '')).toLocaleString('id-ID') : ''}
+                oninput={(e) => { goalTarget = e.target.value.replace(/[^0-9]/g, ''); }}
+                placeholder="0" required class="fp-input fp-input-right" 
+              />
             </div>
           </div>
 
@@ -253,7 +259,12 @@
             <label class="fp-label" for="s-current">Sudah Terkumpul (Opsional)</label>
             <div class="fp-input-wrap">
               <span class="fp-input-prefix">Rp</span>
-              <input type="number" id="s-current" min="0" bind:value={goalCurrent} placeholder="0" class="fp-input fp-input-right" />
+              <input 
+                type="text" inputmode="numeric" id="s-current" min="0" 
+                value={goalCurrent ? Number(String(goalCurrent).replace(/[^0-9]/g, '')).toLocaleString('id-ID') : ''}
+                oninput={(e) => { goalCurrent = e.target.value.replace(/[^0-9]/g, ''); }}
+                placeholder="0" class="fp-input fp-input-right" 
+              />
             </div>
           </div>
 
@@ -358,11 +369,10 @@
           <div class="fp-input-wrap">
             <span class="fp-input-prefix" style="font-size:1.1rem; color: {selectedGoal.color};">Rp</span>
             <input
-              type="number" id="p-amt" min="1"
-              bind:value={progressAmount}
-              placeholder="0"
-              required
-              class="fp-input fp-input-right fp-modal-input"
+              type="text" inputmode="numeric" id="p-amt"
+              value={progressAmount ? Number(String(progressAmount).replace(/[^0-9]/g, '')).toLocaleString('id-ID') : ''}
+              oninput={(e) => { progressAmount = e.target.value.replace(/[^0-9]/g, ''); }}
+              placeholder="0" required class="fp-input fp-input-right fp-modal-input"
               style="color: {selectedGoal.color}; font-size: 1.5rem; font-weight: 800;"
             />
           </div>

@@ -59,6 +59,12 @@
     return usage;
   });
 
+  const categoryBudgets = $derived.by(() => {
+    const bMap = {};
+    (auth.budgets || []).forEach(b => bMap[b.category] = b.amount);
+    return bMap;
+  });
+
   const draftUsage = $derived.by(() => {
     const draft = {};
     items.forEach(item => {
@@ -422,8 +428,9 @@
                     <span class="ee-input-prefix">Rp</span>
                     <input
                       id="amount-{idx}"
-                      type="number"
-                      bind:value={item.amount}
+                      type="text" inputmode="numeric"
+                      value={item.amount ? Number(String(item.amount).replace(/[^0-9]/g, '')).toLocaleString('id-ID') : ''}
+                      oninput={(e) => { item.amount = e.target.value.replace(/[^0-9]/g, ''); }}
                       min="1"
                       placeholder="0"
                       required
@@ -441,6 +448,12 @@
                       <option value={cat.name}>{cat.name}</option>
                     {/each}
                   </select>
+                  {#if item.category && categoryBudgets[item.category]}
+                    {@const sisa = categoryBudgets[item.category] - (categoryUsage[item.category] || 0)}
+                    <div style="font-size: 0.75rem; margin-top: 0.35rem; font-weight: 600; color: {sisa < 0 ? '#ef4444' : 'var(--color-primary)'}">
+                      Sisa Anggaran: {formatRupiah(sisa)}
+                    </div>
+                  {/if}
                 </div>
 
                 <!-- Delete button (desktop) -->

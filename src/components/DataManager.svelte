@@ -300,7 +300,12 @@
                 </div>
                 <div class="form-group">
                   <label for="tpl-amt">Nominal (Rp)</label>
-                  <input id="tpl-amt" type="number" bind:value={tplAmount} placeholder="0" required />
+                  <input 
+                    id="tpl-amt" type="text" inputmode="numeric" 
+                    value={tplAmount ? Number(String(tplAmount).replace(/[^0-9]/g, '')).toLocaleString('id-ID') : ''}
+                    oninput={(e) => { tplAmount = e.target.value.replace(/[^0-9]/g, ''); }}
+                    placeholder="0" required 
+                  />
                 </div>
                 <div class="form-group">
                   <label for="tpl-pay">Pembayaran</label>
