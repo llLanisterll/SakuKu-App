@@ -441,15 +441,15 @@ class AuthState {
       // Dalam Supabase, tabel profil berisi semua user. Tapi data transaksi di RLS dilindungi.
       // Jika Superadmin, kita harus by-pass RLS atau pakai function postgres.
       // Untuk amannya, kita panggil function RPC atau sekedar fetch profil.
-      const { data: profiles, error } = await supabase.from('profiles').select('*');
+      const { data: usersData, error } = await supabase.rpc('get_admin_users_data');
       if (error) throw error;
       
-      return profiles.map(p => ({
-        id: p.id,
-        username: p.username,
-        transactionCount: 0,
-        totalExpense: 0,
-        monthlyExpense: 0
+      return usersData.map(u => ({
+        id: u.id,
+        username: u.username,
+        transactionCount: Number(u.transaction_count) || 0,
+        totalExpense: Number(u.total_expense) || 0,
+        monthlyExpense: Number(u.monthly_expense) || 0
       }));
     } catch(e) {
       console.error(e);
