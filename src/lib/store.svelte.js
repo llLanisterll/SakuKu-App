@@ -243,6 +243,24 @@ class AuthState {
     ui.isLoading = false;
   }
 
+  async loginWithGoogle() {
+    ui.isLoading = true;
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + window.location.pathname
+        }
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error(err);
+      ui.addNotification('Gagal login dengan Google. Coba lagi.', 'error');
+    } finally {
+      ui.isLoading = false;
+    }
+  }
+
   logoutLocal() {
     this.currentUser = null;
     this.transactions = [];
