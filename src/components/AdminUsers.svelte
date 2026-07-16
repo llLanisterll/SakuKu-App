@@ -1,28 +1,41 @@
 <script>
   import { auth, ui } from '../lib/store.svelte.js';
 
-  function formatRupiah(v) {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v);
+  let usersData = $state([]);
+  let isDeleting = $state(false);
+
+  async function loadUsers() {
+    usersData = await auth.getAllUsersData();
   }
 
-  let usersData = $state([]);
-  
   $effect(() => {
-    auth.getAllUsersData().then(data => {
-      usersData = data;
-    });
+    loadUsers();
   });
 
   const totalUsers = $derived(usersData.length);
 
-  function handleDeleteUser(username) {
+  function handleDeleteUser(userId, username) {
+    // Jangan izinkan hapus akun sendiri
+    if (userId === auth.currentUser?.id) {
+      ui.addNotification('Anda tidak dapat menghapus akun Anda sendiri.', 'warning');
+      return;
+    }
     ui.askConfirmation({
       title: 'Hapus Pengguna',
       message: `Apakah Anda yakin ingin menghapus akun "${username}" beserta seluruh datanya? Tindakan ini tidak dapat dibatalkan.`,
       confirmText: 'Hapus Permanen',
       type: 'danger',
-      onConfirm: () => {
-        ui.addNotification(`Untuk menghapus akun, silakan hapus dari Dasbor Supabase (Batasan Keamanan)`, 'info');
+      onConfirm: async () => {
+        isDeleting = true;
+        try {
+          await auth.deleteUser(userId);
+          ui.addNotification(`Akun "${username}" berhasil dihapus.`, 'success');
+          await loadUsers();
+        } catch (e) {
+          ui.addNotification(e.message || 'Gagal menghapus akun.', 'error');
+        } finally {
+          isDeleting = false;
+        }
       }
     });
   }
@@ -83,24 +96,32 @@
     {:else}
       <div class="users-grid">
         {#each usersData as user}
-          <div class="user-card animate-fade-in">
+          <div class="user-card animate-fade-in" class:is-self={user.id === auth.currentUser?.id}>
             <div class="user-card-header">
               <div class="user-avatar-lg" style="background: {getAvatarGradient(user.username)}">
                 {getInitial(user.username)}
               </div>
               <div class="user-card-info">
-                <span class="user-card-name">{user.username}</span>
-                <span class="user-card-role">Pengguna</span>
+                <span class="user-card-name">
+                  {user.username}
+                  {#if user.id === auth.currentUser?.id}
+                    <span class="self-badge">Anda</span>
+                  {/if}
+                </span>
+                <span class="user-card-role">{user.isSuperAdmin ? 'Superadmin' : 'Pengguna'}</span>
               </div>
-              <button
-                class="btn-delete-user"
-                onclick={() => handleDeleteUser(user.username)}
-                title="Hapus Akun"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.34 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                </svg>
-              </button>
+              {#if user.id !== auth.currentUser?.id && !user.isSuperAdmin}
+                <button
+                  class="btn-delete-user"
+                  onclick={() => handleDeleteUser(user.id, user.username)}
+                  title="Hapus Akun"
+                  disabled={isDeleting}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.34 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                  </svg>
+                </button>
+              {/if}
             </div>
 
             <div class="user-stats-row">
@@ -115,17 +136,6 @@
               <div class="user-stat">
                 <span class="ustat-val">{user.templateCount}</span>
                 <span class="ustat-lbl">Template</span>
-              </div>
-            </div>
-
-            <div class="user-expense-rows">
-              <div class="user-expense-item">
-                <span class="uexp-label">Pengeluaran Bulan Ini</span>
-                <span class="uexp-val monthly">{formatRupiah(user.monthlyExpense)}</span>
-              </div>
-              <div class="user-expense-item">
-                <span class="uexp-label">Total Keseluruhan</span>
-                <span class="uexp-val total">{formatRupiah(user.totalExpense)}</span>
               </div>
             </div>
           </div>
@@ -247,7 +257,28 @@
 
   .btn-delete-user svg { width: 16px; height: 16px; }
 
-  .btn-delete-user:hover { color: var(--color-danger); background: var(--color-danger-bg); }
+  .btn-delete-user:hover:not(:disabled) { color: var(--color-danger); background: var(--color-danger-bg); }
+  .btn-delete-user:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .user-card.is-self {
+    border-color: rgba(99,102,241,0.35);
+    background: rgba(99,102,241,0.05);
+  }
+
+  .self-badge {
+    display: inline-block;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-primary);
+    background: var(--color-primary-glow);
+    border: 1px solid rgba(99,102,241,0.25);
+    border-radius: 4px;
+    padding: 0.1rem 0.35rem;
+    margin-left: 0.35rem;
+    vertical-align: middle;
+  }
 
   .user-stats-row {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
@@ -267,14 +298,6 @@
     font-size: 0.625rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;
     letter-spacing: 0.04em; margin-top: 0.1rem;
   }
-
-  .user-expense-rows { display: flex; flex-direction: column; gap: 0.5rem; }
-  .user-expense-item { display: flex; justify-content: space-between; align-items: center; }
-
-  .uexp-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
-  .uexp-val { font-size: 0.875rem; font-weight: 700; font-family: var(--font-title); }
-  .uexp-val.monthly { color: var(--color-danger); }
-  .uexp-val.total { color: var(--text-primary); }
 
   .empty-users {
     display: flex; flex-direction: column; align-items: center; justify-content: center;

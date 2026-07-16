@@ -623,24 +623,35 @@ class AuthState {
     if (!this.currentUser?.isSuperAdmin) return [];
     ui.isLoading = true;
     try {
-      // Karena kita hanya punya akses ke profiles dan tidak ke admin API tanpa service key,
-      // Kita bisa buat query atau tampilkan data dasar saja.
-      // Dalam Supabase, tabel profil berisi semua user. Tapi data transaksi di RLS dilindungi.
-      // Jika Superadmin, kita harus by-pass RLS atau pakai function postgres.
-      // Untuk amannya, kita panggil function RPC atau sekedar fetch profil.
       const { data: usersData, error } = await supabase.rpc('get_admin_users_data');
       if (error) throw error;
       
       return usersData.map(u => ({
         id: u.id,
         username: u.username,
+        isSuperAdmin: u.is_superadmin || false,
         transactionCount: Number(u.transaction_count) || 0,
-        totalExpense: Number(u.total_expense) || 0,
-        monthlyExpense: Number(u.monthly_expense) || 0
+        categoryCount: Number(u.category_count) || 0,
+        templateCount: Number(u.template_count) || 0,
       }));
     } catch(e) {
       console.error(e);
       return [];
+    } finally {
+      ui.isLoading = false;
+    }
+  }
+
+  async deleteUser(targetUserId) {
+    if (!this.currentUser?.isSuperAdmin) throw new Error('Akses ditolak');
+    if (targetUserId === this.currentUser.id) throw new Error('Tidak dapat menghapus akun sendiri');
+    ui.isLoading = true;
+    try {
+      const { error } = await supabase.rpc('admin_delete_user', { target_user_id: targetUserId });
+      if (error) throw error;
+    } catch(e) {
+      console.error(e);
+      throw new Error(e.message || 'Gagal menghapus pengguna');
     } finally {
       ui.isLoading = false;
     }
